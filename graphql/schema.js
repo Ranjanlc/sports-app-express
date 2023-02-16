@@ -13,22 +13,24 @@ type Event {
    matchStatus:String!
    homeScore:Int
    awayScore:Int
+   winnerTeam:Int
 }
 type MatchList {
     competitionName:String!
     competitionId:ID!
+    competitionImage:String!
     venue:String!
     events:[Event!]!
-    competitionImage:String!
 }
+
 type RootMutation{
-    createMatch(date:String):MatchList!
+    addFavourites(date:String):MatchList!
 }
 
 type RootQuery {
-    getFootballMatches(date:String):[MatchList!]
-    getCricketMatches(date:String):MatchList!
-    getBasketballMatches(date:String):MatchList!
+    getFootballMatches(date:String!):[MatchList!]
+    getCricketMatches(date:String!):[MatchList!]
+    getBasketballMatches(date:String!):[MatchList!]
 }
 schema {
     query:RootQuery
