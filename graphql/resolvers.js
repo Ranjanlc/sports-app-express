@@ -1,19 +1,14 @@
 // const fetch = require('node-fetch');
 const getMatchDate = (timeStamp) => {
-  // console.log(timeStamp);
   const dateObj = new Date(+timeStamp * 1000);
-  // console.log(dateObj);
   const year = dateObj.getFullYear();
   const month = dateObj.getUTCMonth() + 1; // add 1 since month is zero-based
   const day = dateObj.getUTCDate();
   const hours = dateObj.getUTCHours();
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
-
   // Format the date and time as a string
   const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-
-  // Output the formatted time
   return formattedTime;
 };
 const getMatches = async (date, sport) => {
@@ -51,45 +46,51 @@ const getMatches = async (date, sport) => {
   }
   const refinedSet = minimizedSet.map((set) => {
     // TODO:Use destructuring syntax to make it easy.
-    const events = set.EVENTS.map((event) => {
-      const notStarted = {
-        matchId: event.MATCH_ID,
+    const events = set.EVENTS.map((unfilteredEvent) => {
+      const {
+        MATCH_ID: matchId,
+        HOME_TEAM: homeTeam,
+        AWAY_TEAM: awayTeam,
+        MATCH_START_DATE: startTime,
+        MATCH_STATUS: matchStatus,
+        HOME_SCORE: homeScore,
+        AWAY_SCORE: awayScore,
+      } = unfilteredEvent;
+      const event = {
+        matchId,
         homeTeam: {
-          name: event.HOME_TEAM.at(0).NAME,
+          name: homeTeam.at(0).NAME,
           imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
-            event.HOME_TEAM.at(0).BADGE_ID
+            homeTeam.at(0).BADGE_ID
           }.png`,
-          teamId: event.HOME_TEAM.at(0).ID,
         },
         awayTeam: {
-          name: event.AWAY_TEAM.at(0).NAME,
+          name: awayTeam.at(0).NAME,
           imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
-            event.AWAY_TEAM.at(0).BADGE_ID
+            awayTeam.at(0).BADGE_ID
           }.png`,
-          teamId: event.AWAY_TEAM.at(0).ID,
         },
-        startTime: event.MATCH_START_DATE,
-        matchStatus: event.MATCH_STATUS,
+        startTime,
+        matchStatus,
       };
-      if (event.MATCH_STATUS !== 'NS') {
-        return {
-          ...notStarted,
-          homeScore: event.HOME_SCORE,
-          awayScore: event.AWAY_SCORE,
-        };
-      } else {
-        return notStarted;
+      if (matchStatus !== 'NS') {
+        event.homeScore = homeScore;
+        event.awayScore = awayScore;
       }
+      return event;
     });
-
+    const {
+      STAGE_NAME: competitionName,
+      COMPETITION_ID: competitionId,
+      COUNTRY_NAME: venue,
+      STAGE_CODE: stageCode,
+    } = set;
     return {
-      competitionName: set.STAGE_NAME,
-      competitionId: set.COMPETITION_ID,
-      venue: set.COUNTRY_NAME,
+      competitionName,
+      competitionId,
+      venue,
       events,
-      competitionImage: `https://static.livescore.com/i2/fh${
-        sport === 'basketball' ? '/xbb-' : '/'
-      }${set.STAGE_CODE}.jpg`,
+      competitionImage: `https://static.livescore.com/i2/fh/${stageCode}.jpg`,
     };
   });
   // console.log(refinedSet);
