@@ -1,3 +1,3 @@
-cricket-id:62=>Go to events by schedule.Get id from category=>tournament id
+cricket-id:62=>Go to events by schedule.Get id from category=>tournament id,note:
 basketball=>get tournament id from scheduled event and load the data for whole tournament and load it page wise(if back,put it to last and if results,put it to next).
 
