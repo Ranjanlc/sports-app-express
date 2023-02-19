@@ -27,10 +27,18 @@ const getMatches = async (date, sport, live = false) => {
     }
   );
   const { data } = await res.json();
-  if (data.length === 0) {
-    return [{}];
+  if (data?.length === 0) {
+    return [];
   }
-  const reducedData = data.slice(0, 100).reduce((acc, boilerData) => {
+  const filteredData =
+    sport === 'basketball'
+      ? data?.filter((comp) => {
+          if (comp.tournament.name !== 'NBA Rising Stars Challenge') {
+            return comp;
+          }
+        })
+      : data;
+  const reducedData = filteredData?.slice(0, 100).reduce((acc, boilerData) => {
     const {
       tournament: {
         id: competitionId,
@@ -196,13 +204,14 @@ const getMatches = async (date, sport, live = false) => {
     }
   }, {});
   const refinedData = Object.values(reducedData);
-  console.log(refinedData);
+  // console.log(refinedData);
   return refinedData;
 };
-const getFootballMatches = async ({ date }, live = false) => {
+const getFootballMatches = async (date, live = false) => {
   const URL = `https://livescore-sports.p.rapidapi.com/v1/events/${
-    live ? 'live' : `date=${date}`
-  }?locale=EN&timezone=0&sport=soccer`;
+    live ? 'live?' : `list?date=${date}&`
+  }locale=EN&timezone=0&sport=soccer`;
+  // console.log(URL);
   const res = await fetch(URL, {
     headers: {
       'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
@@ -210,12 +219,15 @@ const getFootballMatches = async ({ date }, live = false) => {
     },
   });
   const { DATA: data } = await res.json();
+  // console.log(data);
   let minimizedSet;
   if (data?.length === 0) {
-    return [{}];
+    return [];
   }
   if (data.length <= 10) {
-    minimizedSet = data;
+    minimizedSet = data
+      .slice(0, 10)
+      .filter((comp) => comp.competitionId !== undefined);
   } else {
     minimizedSet = data.slice(0, 15).filter((comp) => {
       if (
@@ -267,7 +279,7 @@ const getFootballMatches = async ({ date }, live = false) => {
     });
     const {
       STAGE_NAME: competitionName,
-      STAGE_ID: competitionId,
+      COMPETITION_ID: competitionId,
       COUNTRY_NAME: venue,
       STAGE_CODE: stageCode,
     } = set;
@@ -282,7 +294,9 @@ const getFootballMatches = async ({ date }, live = false) => {
   console.log(refinedSet);
   return refinedSet;
 };
-exports.getFootballMatches = getFootballMatches;
+exports.getFootballMatches = ({ date }) => {
+  return getFootballMatches(date);
+};
 exports.getBasketballMatches = ({ date }) => {
   return getMatches(date, 'basketball');
 };
@@ -290,11 +304,124 @@ exports.getCricketMatches = ({ date }) => {
   return getMatches(date, 'cricket');
 };
 exports.getLiveFootballMatches = async () => {
-  getFootballMatches({}, true);
+  return getFootballMatches({}, true);
 };
 exports.getLiveBasketballMatches = async () => {
-  getMatches({}, 'basketball', true);
+  return getMatches({}, 'basketball', true);
 };
 exports.getLiveCricketMatches = async () => {
-  getMatches({}, 'cricket', true);
+  return getMatches({}, 'cricket', true);
+};
+const destructureStandings = (data, setGroup = false) => {
+  const {
+    LEAGUE_TABLE: { L },
+  } = data;
+  const { TABLES: table } = L[0];
+  const { TEAM: teams } = table[0];
+  const standings = teams.map((team) => {
+    const {
+      TEAM_ID: teamId,
+      RANK: position,
+      TEAM_NAME: name,
+      TEAM_PLAYED: played,
+      WINS_INT: wins,
+      DRAWS_INT: draws,
+      LOSES_INT: loses,
+      GOAL_FOR: GF,
+      GOAL_AGAINST: GA,
+      GOAL_DIFFERENCE: GD,
+      POINTS_INT: points,
+    } = team;
+    countryCode = setGroup && data.COUNTRY_CODE;
+    return {
+      [setGroup && 'group']: countryCode,
+      teamId,
+      position,
+      name,
+      played,
+      wins,
+      draws,
+      loses,
+      GF,
+      GA,
+      GD,
+      points,
+    };
+  });
+  return standings;
+};
+exports.getCompetitionDetails = async ({ compId }) => {
+  const res = await fetch(
+    `https://livescore-sports.p.rapidapi.com/v1/competitions/details?timezone=0&competition_id=60&locale=EN`,
+    {
+      headers: {
+        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
+        'X-RapidAPI-Host': 'livescore-sports.p.rapidapi.com',
+      },
+    }
+  );
+  const res1 = await fetch(
+    `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=60&locale=EN`,
+    {
+      headers: {
+        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
+        'X-RapidAPI-Host': 'livescore-sports.p.rapidapi.com',
+      },
+    }
+  );
+  const {
+    DATA: { STAGES },
+  } = await res.json();
+  const { DATA: data } = await res1.json();
+  let standings;
+  if (data.length === 0) standings = [];
+  if (data.length > 1) {
+    standings = data.flatMap((item) => {
+      return destructureStandings(item, true);
+    });
+    console.log(standings);
+  }
+  if (data.length === 1) {
+    standings = destructureStandings(data[0]);
+  }
+
+  const { EVENTS: events } = STAGES.at(0);
+  const matches = { fixtures: [], results: [] };
+  events.forEach((unfilteredEvent) => {
+    const {
+      MATCH_ID: matchId,
+      HOME_TEAM: homeTeam,
+      AWAY_TEAM: awayTeam,
+      MATCH_START_DATE: startTime,
+      MATCH_STATUS: matchStatus,
+      HOME_SCORE: homeScore,
+      AWAY_SCORE: awayScore,
+    } = unfilteredEvent;
+    const event = {
+      matchId,
+      homeTeam: {
+        name: homeTeam.at(0).NAME,
+        imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
+          homeTeam.at(0).BADGE_ID
+        }.png`,
+      },
+      awayTeam: {
+        name: awayTeam.at(0).NAME,
+        imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
+          awayTeam.at(0).BADGE_ID
+        }.png`,
+      },
+      startTime,
+      matchStatus,
+    };
+    if (matchStatus !== 'NS') {
+      event.homeScore = homeScore;
+      event.awayScore = awayScore;
+      matches.results.unshift(event);
+    } else {
+      matches.fixtures.push(event);
+    }
+  });
+
+  return { matches, standings };
 };

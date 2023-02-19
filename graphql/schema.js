@@ -31,10 +31,32 @@ type Event {
 
 type MatchList {
     competitionName:String!
-    competitionId:ID!
+    competitionId:ID
     competitionImage:String!
     venue:String!
     events:[Event!]!
+}
+type CompetitionStanding {
+    group:String
+    teamId:ID!
+    position:Int
+    name:String! 
+    played:Int!
+    wins:Int! 
+    draws:Int! 
+    loses:Int!
+    GF:Int!
+    GA:Int! 
+    GD:Int! 
+    points:Int! 
+}
+type CompetitionMatches{
+    fixtures:[Event!]!
+    results:[Event!]!
+}
+type CompetitionDetail {
+    matches:CompetitionMatches!
+    standings:[CompetitionStanding]
 }
 
 type RootMutation{
@@ -48,6 +70,7 @@ type RootQuery {
     getLiveFootballMatches:[MatchList]
     getLiveBasketballMatches:[MatchList]
     getLiveCricketMatches:[MatchList]
+    getCompetitionDetails(compId:Int!):CompetitionDetail!
 }
 schema {
     query:RootQuery
