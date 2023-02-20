@@ -36,10 +36,11 @@ type MatchList {
     venue:String!
     events:[Event!]!
 }
-type CompetitionStanding {
+type FootballStanding {
     group:String
     teamId:ID!
-    position:Int
+    teamImageUrl:String!
+    position:Int!
     name:String! 
     played:Int!
     wins:Int! 
@@ -50,13 +51,56 @@ type CompetitionStanding {
     GD:Int! 
     points:Int! 
 }
-type CompetitionMatches{
+type BasketballStanding {
+    name:String!
+    teamId:ID!
+    teamImageUrl:String! 
+    position:Int! 
+    wins:Int! 
+    loses:Int! 
+    played:Int! 
+    percentage:Float!
+    points:Int 
+    gamesBehind:Float
+}
+type CricketStanding{
+    name:String! 
+    teamId:ID! 
+    teamImageUrl:String! 
+    position:Int! 
+    wins:Int! 
+    loses:Int! 
+    played:Int! 
+    points:Int! 
+    netRunRate:Float! 
+}
+type CricketStandingSet{
+    standings:[CricketStanding]
+    groupName:String
+}
+type BasketballStandingSet {
+    standings:[BasketballStanding]
+    groupName:String
+}
+type FootballMatches{
     fixtures:[Event!]!
     results:[Event!]!
 }
-type CompetitionDetail {
-    matches:CompetitionMatches!
-    standings:[CompetitionStanding]
+type CompetitionMatches{
+    matches:[Event!]!
+    hasNextPage:Boolean!
+}
+type FootballDetail {
+    matches:FootballMatches!
+    standings:[FootballStanding]
+}
+type BasketballDetail{
+    matchSet:CompetitionMatches
+    standingSet:[BasketballStandingSet]
+}
+type CricketDetail{
+    matchSet:CompetitionMatches
+    standingSet:[CricketStandingSet]
 }
 
 type RootMutation{
@@ -70,7 +114,9 @@ type RootQuery {
     getLiveFootballMatches:[MatchList]
     getLiveBasketballMatches:[MatchList]
     getLiveCricketMatches:[MatchList]
-    getCompetitionDetails(compId:Int!):CompetitionDetail!
+    getFootballDetails(compId:Int!):FootballDetail!
+    getBasketballDetails(uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):BasketballDetail!
+    getCricketDetails(uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):CricketDetail!
 }
 schema {
     query:RootQuery
