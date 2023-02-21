@@ -32,6 +32,7 @@ type Event {
 type MatchList {
     competitionName:String!
     competitionId:ID
+    uniqueId:ID
     competitionImage:String!
     venue:String!
     events:[Event!]!
@@ -44,7 +45,6 @@ type FootballStanding {
     name:String! 
     played:Int!
     wins:Int! 
-    draws:Int! 
     loses:Int!
     GF:Int!
     GA:Int! 
@@ -57,11 +57,10 @@ type BasketballStanding {
     teamImageUrl:String! 
     position:Int! 
     wins:Int! 
-    loses:Int! 
+    losses:Int! 
     played:Int! 
     percentage:Float!
     points:Int 
-    gamesBehind:Float
 }
 type CricketStanding{
     name:String! 
@@ -69,7 +68,7 @@ type CricketStanding{
     teamImageUrl:String! 
     position:Int! 
     wins:Int! 
-    loses:Int! 
+    losses:Int 
     played:Int! 
     points:Int! 
     netRunRate:Float! 
@@ -116,7 +115,7 @@ type RootQuery {
     getLiveCricketMatches:[MatchList]
     getFootballDetails(compId:Int!):FootballDetail!
     getBasketballDetails(uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):BasketballDetail!
-    getCricketDetails(uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):CricketDetail!
+    getCricketDetails(compId:Int!,uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):CricketDetail!
 }
 schema {
     query:RootQuery

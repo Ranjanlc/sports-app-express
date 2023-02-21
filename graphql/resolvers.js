@@ -14,6 +14,78 @@ const getMatchDate = (timeStamp) => {
 const checkWickets = (wickets) => {
   return `${wickets === 10 ? '' : `/${wickets}`}`;
 };
+const refineInnings = (homeScore, awayScore) => {
+  const { display: homeDisplay, innings: homeInnings } = homeScore;
+  const { display: awayDisplay, innings: awayInnings } = awayScore;
+  let displayHomeScore, displayAwayScore;
+  const homeInningsRefined = homeInnings
+    ? homeInnings
+    : {
+        inning1: {
+          score: 'Yet to bat',
+          wickets: 0,
+          overs: '-',
+        },
+      };
+  const awayInningsRefined = awayInnings
+    ? awayInnings
+    : {
+        inning1: {
+          score: 'Yet to bat',
+        },
+      };
+  const {
+    inning1: {
+      score: home1stScore,
+      wickets: home1stWickets,
+      overs: home1stOvers,
+    },
+    inning2: homeInning2,
+  } = homeInningsRefined;
+  const {
+    inning1: {
+      score: away1stScore,
+      wickets: away1stWickets,
+      overs: away1stOvers,
+    },
+    inning2: awayInning2,
+  } = awayInningsRefined;
+  if (homeInning2 || awayInning2) {
+    const awayTotalScore = awayDisplay;
+    const homeTotalScore = homeDisplay;
+    let dirtyHomeScore;
+    if (homeInning2) {
+      dirtyHomeScore = `${homeInning2.score}${checkWickets(
+        homeInning2.wickets
+      )} (${homeInning2.overs})`;
+    } else {
+      dirtyHomeScore = `${home1stScore}${checkWickets(
+        home1stWickets
+      )} (${home1stOvers})`;
+    }
+    let dirtyAwayScore;
+    if (awayInning2) {
+      dirtyAwayScore = `${awayInning2.score}${checkWickets(
+        awayInning2.wickets
+      )} (${awayInning2.overs})`;
+    } else {
+      dirtyAwayScore = `${away1stScore}${checkWickets(
+        away1stWickets
+      )} (${away1stOvers})`;
+    }
+    displayHomeScore = `${dirtyHomeScore} ${homeTotalScore}`;
+    displayAwayScore = `${dirtyAwayScore} ${awayTotalScore}`;
+  } else {
+    //To check if there is innings object in homeScore,where the match might be played and it's innings may not come;
+    displayHomeScore = homeScore.innings
+      ? `${home1stScore}${checkWickets(home1stWickets)} (${home1stOvers})`
+      : 'Yet to bat';
+    displayAwayScore = awayScore.innings
+      ? `${away1stScore}${checkWickets(away1stWickets)} (${away1stOvers})`
+      : 'Yet to bat';
+  }
+  return { displayHomeScore, displayAwayScore };
+};
 const getMatches = async (date, sport, live = false) => {
   const res = await fetch(
     `https://sofasport.p.rapidapi.com/v1/events/schedule/${
@@ -21,7 +93,7 @@ const getMatches = async (date, sport, live = false) => {
     }sport_id=${sport === 'basketball' ? '2' : '62'}`,
     {
       headers: {
-        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
+        'X-RapidAPI-Key': '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede',
         'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
       },
     }
@@ -42,10 +114,10 @@ const getMatches = async (date, sport, live = false) => {
     const {
       tournament: {
         name: competitionName,
-        uniqueTournament: { id: competitionId },
+        id: tournamentId,
+        uniqueTournament: { id: uniqueId },
         slug,
         category,
-        uniqueTournament,
       },
       id: matchId,
       status,
@@ -90,74 +162,12 @@ const getMatches = async (date, sport, live = false) => {
         if (battingId === awayTeamId) {
           event.awayTeam.isBatting = true;
         }
-        const { display: homeDisplay, innings: homeInnings } = homeScore;
-        const { display: awayDisplay, innings: awayInnings } = awayScore;
-        const homeInningsRefined = homeInnings
-          ? homeInnings
-          : {
-              inning1: {
-                score: 'Yet to bat',
-                wickets: 0,
-                overs: '-',
-              },
-            };
-        const awayInningsRefined = awayInnings
-          ? awayInnings
-          : {
-              inning1: {
-                score: 'Yet to bat',
-              },
-            };
-        const {
-          inning1: {
-            score: home1stScore,
-            wickets: home1stWickets,
-            overs: home1stOvers,
-          },
-          inning2: homeInning2,
-        } = homeInningsRefined;
-        const {
-          inning1: {
-            score: away1stScore,
-            wickets: away1stWickets,
-            overs: away1stOvers,
-          },
-          inning2: awayInning2,
-        } = awayInningsRefined;
-        if (homeInning2 || awayInning2) {
-          const awayTotalScore = awayDisplay;
-          const homeTotalScore = homeDisplay;
-          let dirtyHomeScore;
-          if (homeInning2) {
-            dirtyHomeScore = `${homeInning2.score}${checkWickets(
-              homeInning2.wickets
-            )} (${homeInning2.overs})`;
-          } else {
-            dirtyHomeScore = `${home1stScore}${checkWickets(
-              home1stWickets
-            )} (${home1stOvers})`;
-          }
-          let dirtyAwayScore;
-          if (awayInning2) {
-            dirtyAwayScore = `${awayInning2.score}${checkWickets(
-              awayInning2.wickets
-            )} (${awayInning2.overs})`;
-          } else {
-            dirtyAwayScore = `${away1stScore}${checkWickets(
-              away1stWickets
-            )} (${away1stOvers})`;
-          }
-          event.homeScore = `${dirtyHomeScore} ${homeTotalScore}`;
-          event.awayScore = `${dirtyAwayScore} ${awayTotalScore}`;
-        } else {
-          //To check if there is innings object in homeScore,where the match might be played and it's innings may not come;
-          event.homeScore = homeScore.innings
-            ? `${home1stScore}${checkWickets(home1stWickets)} (${home1stOvers})`
-            : 'Yet to bat';
-          event.awayScore = awayScore.innings
-            ? `${away1stScore}${checkWickets(away1stWickets)} (${away1stOvers})`
-            : 'Yet to bat';
-        }
+        const { displayHomeScore, displayAwayScore } = refineInnings(
+          homeScore,
+          awayScore
+        );
+        event.homeScore = displayHomeScore;
+        event.awayScore = displayAwayScore;
         event.note =
           status.description === 'Ended' ? boilerData.note : status.description;
         //In case there was no note of ended match
@@ -185,17 +195,19 @@ const getMatches = async (date, sport, live = false) => {
       competitionName === 'NBA' ||
       category.slug === 'world'
     ) {
-      // From unique tourna's id is where we get the image.
-      const { id } = uniqueTournament;
-      competitionImage = `https://api.sofascore.app/api/v1/unique-tournament/${id}/image`;
+      competitionImage = `https://api.sofascore.app/api/v1/unique-tournament/${uniqueId}/image`;
     } else {
-      imageCode = category.alpha2.toLowerCase();
+      // Case where there is no alpha2,majorly in cricket.
+      imageCode = category.alpha2
+        ? category.alpha2.toLowerCase()
+        : category.flag;
       competitionImage = `https://www.sofascore.com/static/images/flags/${imageCode}.png`;
     }
     if (!acc[slug]) {
       acc[slug] = {
         competitionName,
-        competitionId,
+        competitionId: sport === 'cricket' ? tournamentId : uniqueId,
+        uniqueId,
         competitionImage,
         venue: category.name,
         events: [event],
@@ -428,18 +440,16 @@ exports.getFootballDetails = async ({ compId }) => {
 
   return { matches, standings };
 };
-const refineStandings = (compData, sport = 'basketball') => {
+const refineStandings = (compData, sport) => {
   const { rows: standingSet } = compData;
   const standings = standingSet.map((teamData) => {
     const {
       team: { name, id: teamId },
       position,
       wins,
-      loses,
-      draws,
+      losses,
       points,
       percentage,
-      gamesBehind,
       matches: played,
       netRunRate,
     } = teamData;
@@ -452,26 +462,159 @@ const refineStandings = (compData, sport = 'basketball') => {
         points,
         played,
         wins,
-        draws,
-        loses,
+        losses,
         netRunRate,
       };
     }
-    return {
-      name,
-      teamId,
-      teamImageUrl: `https://api.sofascore.app/api/v1/team/${teamId}/image`,
-      position,
-      [gamesBehind && 'gamesBehind']: gamesBehind,
-      [points && 'points']: points,
-      played,
-      wins,
-      loses,
-      draws,
-      percentage,
-    };
+    if (sport === 'basketball') {
+      return {
+        name,
+        teamId,
+        teamImageUrl: `https://api.sofascore.app/api/v1/team/${teamId}/image`,
+        position,
+        [points && 'points']: points,
+        played,
+        wins,
+        losses,
+        percentage,
+      };
+    }
   });
+  // console.log(standings);
   return standings;
+};
+// TODO:handle the case where there is no  standings.
+const getCompetitionDetails = async (
+  sport,
+  id,
+  appSeasonId,
+  dateState,
+  page,
+  uniqueId
+) => {
+  // All this uniqueId and id stuff just to load cricket data with tournament id and as matches needs uniquetournament,we pass it extra too.But with basketball,we fetch it with uniqueId which is simply under id.
+  console.log(id, uniqueId);
+  let seasonId, standingSet;
+  if (appSeasonId) {
+    seasonId = appSeasonId;
+  } else {
+    console.log('chirenaa');
+    const res = await fetch(
+      `https://sofasport.p.rapidapi.com/v1/${
+        sport === 'cricket' ? 'tournaments' : 'unique-tournaments'
+      }/seasons?${
+        sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
+      }=${id}`,
+      {
+        headers: {
+          'X-RapidAPI-Key':
+            '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede',
+          'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
+        },
+      }
+    );
+    const { data } = await res.json();
+    const seasons = sport === 'basketball' ? data : data.seasons;
+    seasonId = seasons.at(0).id;
+  }
+  console.log(seasonId);
+  const standingRes = await fetch(
+    `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&${
+      sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
+    }=${id}`,
+    {
+      headers: {
+        'X-RapidAPI-Key': '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede',
+        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
+      },
+    }
+  );
+  const { data: standingData } = await standingRes.json();
+  console.log(standingData);
+  const matchRes = await fetch(
+    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${seasonId}&unique_tournament_id=${
+      sport === 'cricket' ? uniqueId : id
+    }`,
+    {
+      headers: {
+        'X-RapidAPI-Key': '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede',
+        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
+      },
+    }
+  );
+  const {
+    data: { events, hasNextPage },
+  } = await matchRes.json();
+  const matches = [];
+  events.forEach((boilerData) => {
+    const {
+      id: matchId,
+      status: { description: matchStatus },
+      homeTeam: { name: homeTeamName, id: homeTeamId },
+      awayTeam: { name: awayTeamName, id: awayTeamId },
+      homeScore, //complexity coz of API's name.
+      awayScore,
+      winnerCode: winnerTeam,
+      startTimestamp,
+      note,
+    } = boilerData;
+    const event = {
+      matchId,
+      matchStatus,
+      homeTeam: {
+        name: homeTeamName,
+        imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
+      },
+      awayTeam: {
+        name: awayTeamName,
+        imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
+      },
+      startTime: getMatchDate(startTimestamp),
+      // will note set if it is basketball
+      [sport === 'cricket' && 'note']:
+        matchStatus === 'Ended' ? note : matchStatus,
+    };
+    if (dateState === 'last') {
+      event.winnerTeam = winnerTeam;
+      if (sport === 'basketball') {
+        event.homeScore = homeScore;
+        event.awayScore = awayScore;
+      }
+      if (sport === 'cricket') {
+        const { displayHomeScore, displayAwayScore } = refineInnings(
+          homeScore,
+          awayScore
+        );
+        event.homeScore = displayHomeScore;
+        event.awayScore = displayAwayScore;
+        //Overwriting default matchStatus notes with below.
+        if (matchStatus === 'Not Started') {
+          event.note = 'Not Started Yet';
+        }
+        if (matchStatus === 'Abandoned') {
+          event.note = 'Match abandoned without a ball bowled';
+        }
+      }
+      matches.unshift(event);
+    }
+    if (dateState === 'next') {
+      // TODO:If running matches are on this set,do necessary things to fine-tune it.
+      matches.push(event);
+    }
+  });
+  if (standingData?.length === 1) {
+    standingSet = { standings: refineStandings(standingData[0], sport) };
+  }
+  if (standingData?.length >= 1) {
+    standingSet = standingData.map((compData) => {
+      return {
+        groupName: compData.name,
+        standings: refineStandings(compData, sport),
+      };
+    });
+  }
+  console.log(standingSet);
+  return { matchSet: { matches, hasNextPage }, standingSet };
 };
 exports.getBasketballDetails = async ({
   uniqueId,
@@ -479,262 +622,27 @@ exports.getBasketballDetails = async ({
   dateState = 'next',
   page = 0,
 }) => {
-  //seasonId if we need previous and next matches.
-  let seasonId, standingSet;
-  if (appSeasonId) {
-    seasonId = appSeasonId;
-  } else {
-    console.log('chirenaa');
-    const res = await fetch(
-      `https://sofasport.p.rapidapi.com/v1/unique-tournaments/seasons?unique_tournament_id=${uniqueId}`,
-      {
-        headers: {
-          'X-RapidAPI-Key':
-            'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-          'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-        },
-      }
-    );
-    const { data: seasons } = await res.json();
-    seasonId = seasons.at(0).id;
-  }
-  const standingRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
-    {
-      headers: {
-        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-      },
-    }
+  return getCompetitionDetails(
+    'basketball',
+    uniqueId,
+    appSeasonId,
+    dateState,
+    page
   );
-  const { data: standingData } = await standingRes.json();
-  const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
-    {
-      headers: {
-        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-      },
-    }
-  );
-  const {
-    data: { events, hasNextPage },
-  } = await matchRes.json();
-  const matches = [];
-  events.forEach((boilerData) => {
-    const {
-      id: matchId,
-      status: { description: matchStatus },
-      homeTeam: { name: homeTeamName, id: homeTeamId },
-      awayTeam: { name: awayTeamName, id: awayTeamId },
-      homeScore, //complexity coz of API's name.
-      awayScore,
-      winnerCode: winnerTeam,
-      startTimestamp,
-    } = boilerData;
-    const event = {
-      matchId,
-      matchStatus,
-      homeTeam: {
-        name: homeTeamName,
-        imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
-      },
-      awayTeam: {
-        name: awayTeamName,
-        imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
-      },
-      startTime: getMatchDate(startTimestamp),
-    };
-    if (dateState === 'last') {
-      event.homeScore = homeScore;
-      event.awayScore = awayScore;
-      event.winnerTeam = winnerTeam;
-      matches.unshift(event);
-    }
-    if (dateState === 'next') {
-      if (matchStatus !== 'NS') {
-        event.homeScore = homeScore;
-        event.awayScore = awayScore;
-      }
-      matches.push(event);
-    }
-  });
-  if (standingData.length === 1) {
-    standingSet = { standings: refineStandings(standingData[0]) };
-  }
-  if (standingData.length >= 1) {
-    standingSet = standingData.map((compData) => {
-      return {
-        groupName: compData.name,
-        standings: refineStandings(compData),
-      };
-    });
-  }
-  return { matchSet: { matches, hasNextPage }, standingSet };
 };
-// TODO:MERGE cricketDetail and basketballDetail
 exports.getCricketDetails = async ({
+  compId,
   uniqueId,
   appSeasonId,
   dateState = 'next',
   page = 0,
 }) => {
-  let seasonId, standingSet;
-  if (appSeasonId) {
-    seasonId = appSeasonId;
-  } else {
-    console.log('chirenaa');
-    const res = await fetch(
-      `https://sofasport.p.rapidapi.com/v1/unique-tournaments/seasons?unique_tournament_id=${uniqueId}`,
-      {
-        headers: {
-          'X-RapidAPI-Key':
-            'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-          'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-        },
-      }
-    );
-    const { data: seasons } = await res.json();
-    seasonId = seasons.at(0).id;
-  }
-  const standingRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
-    {
-      headers: {
-        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-      },
-    }
+  return getCompetitionDetails(
+    'cricket',
+    compId,
+    appSeasonId,
+    dateState,
+    page,
+    uniqueId
   );
-  const { data: standingData } = await standingRes.json();
-  const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
-    {
-      headers: {
-        'X-RapidAPI-Key': 'ef2b7f80a7msh604fd81c4dafed9p1dbbb1jsn456d6190b926',
-        'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
-      },
-    }
-  );
-  const {
-    data: { events, hasNextPage },
-  } = await matchRes.json();
-  const matches = [];
-  events.forEach((boilerData) => {
-    const {
-      id: matchId,
-      status: { description: matchStatus },
-      homeTeam: { name: homeTeamName, id: homeTeamId },
-      awayTeam: { name: awayTeamName, id: awayTeamId },
-      homeScore, //complexity coz of API's name.
-      awayScore,
-      winnerCode: winnerTeam,
-      startTimestamp,
-    } = boilerData;
-    const event = {
-      matchId,
-      matchStatus,
-      homeTeam: {
-        name: homeTeamName,
-        imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
-      },
-      awayTeam: {
-        name: awayTeamName,
-        imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
-      },
-      startTime: getMatchDate(startTimestamp),
-      note: matchStatus === 'Ended' ? boilerData.note : matchStatus,
-    };
-    const { display: homeDisplay, innings: homeInnings } = homeScore;
-    const { display: awayDisplay, innings: awayInnings } = awayScore;
-    const homeInningsRefined = homeInnings
-      ? homeInnings
-      : {
-          inning1: {
-            score: 'Yet to bat',
-            wickets: 0,
-            overs: '-',
-          },
-        };
-    const awayInningsRefined = awayInnings
-      ? awayInnings
-      : {
-          inning1: {
-            score: 'Yet to bat',
-          },
-        };
-    const {
-      inning1: {
-        score: home1stScore,
-        wickets: home1stWickets,
-        overs: home1stOvers,
-      },
-      inning2: homeInning2,
-    } = homeInningsRefined;
-    const {
-      inning1: {
-        score: away1stScore,
-        wickets: away1stWickets,
-        overs: away1stOvers,
-      },
-      inning2: awayInning2,
-    } = awayInningsRefined;
-    if (homeInning2 || awayInning2) {
-      const awayTotalScore = awayDisplay;
-      const homeTotalScore = homeDisplay;
-      let dirtyHomeScore;
-      if (homeInning2) {
-        dirtyHomeScore = `${homeInning2.score}${checkWickets(
-          homeInning2.wickets
-        )} (${homeInning2.overs})`;
-      } else {
-        dirtyHomeScore = `${home1stScore}${checkWickets(
-          home1stWickets
-        )} (${home1stOvers})`;
-      }
-      let dirtyAwayScore;
-      if (awayInning2) {
-        dirtyAwayScore = `${awayInning2.score}${checkWickets(
-          awayInning2.wickets
-        )} (${awayInning2.overs})`;
-      } else {
-        dirtyAwayScore = `${away1stScore}${checkWickets(
-          away1stWickets
-        )} (${away1stOvers})`;
-      }
-      event.homeScore = `${dirtyHomeScore} ${homeTotalScore}`;
-      event.awayScore = `${dirtyAwayScore} ${awayTotalScore}`;
-    } else {
-      //To check if there is innings object in homeScore,where the match might be played and it's innings may not come;
-      event.homeScore = homeScore.innings
-        ? `${home1stScore}${checkWickets(home1stWickets)} (${home1stOvers})`
-        : 'Yet to bat';
-      event.awayScore = awayScore.innings
-        ? `${away1stScore}${checkWickets(away1stWickets)} (${away1stOvers})`
-        : 'Yet to bat';
-    }
-    if (dateState === 'last') {
-      event.winnerTeam = winnerTeam;
-      matches.unshift(event);
-    }
-    if (dateState === 'next') {
-      if (matchStatus !== 'NS') {
-        event.homeScore = homeScore;
-        event.awayScore = awayScore;
-      }
-      matches.push(event);
-    }
-  });
-  if (standingData.length === 1) {
-    standingSet = { standings: refineStandings(standingData[0], 'cricket') };
-  }
-  if (standingData.length >= 1) {
-    standingSet = standingData.map((compData) => {
-      return {
-        groupName: compData.name,
-        standings: refineStandings(compData, 'cricket'),
-      };
-    });
-  }
-  return { matchSet: { matches, hasNextPage }, standingSet };
 };
