@@ -1,15 +1,4 @@
 const { buildSchema } = require('graphql');
-
-/* type Inning {
-    score:Int!
-    wickets:Int!
-    overs:Float!
-}
-type Innings {
-    inning1:Inning!
-    inning2:Inning
-}
-*/
 module.exports = buildSchema(`
 
 type Team {
@@ -46,6 +35,7 @@ type FootballStanding {
     played:Int!
     wins:Int! 
     loses:Int!
+    draws:Int!
     GF:Int!
     GA:Int! 
     GD:Int! 
@@ -87,6 +77,7 @@ type FootballMatches{
 }
 type CompetitionMatches{
     matches:[Event!]!
+    seasonId:ID!
     hasNextPage:Boolean!
 }
 type FootballDetail {
@@ -95,6 +86,7 @@ type FootballDetail {
 }
 type BasketballDetail{
     matchSet:CompetitionMatches
+    seasonId:ID! 
     standingSet:[BasketballStandingSet]
 }
 type CricketDetail{
