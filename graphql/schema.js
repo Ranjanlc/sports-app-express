@@ -1,6 +1,5 @@
 const { buildSchema } = require('graphql');
 module.exports = buildSchema(`
-
 type Team {
     name:String!
     imageUrl:String!
@@ -17,7 +16,6 @@ type Event {
     winnerTeam:Int
     note:String
 }
-
 type MatchList {
     competitionName:String!
     competitionId:ID
@@ -25,6 +23,10 @@ type MatchList {
     competitionImage:String!
     venue:String!
     events:[Event!]!
+}
+type MatchContainer{
+    matches:[MatchList!]
+    featuredMatch:Event
 }
 type FootballStanding {
     group:String
@@ -77,7 +79,6 @@ type FootballMatches{
 }
 type CompetitionMatches{
     matches:[Event!]!
-    seasonId:ID!
     hasNextPage:Boolean!
 }
 type FootballDetail {
@@ -91,7 +92,74 @@ type BasketballDetail{
 }
 type CricketDetail{
     matchSet:CompetitionMatches
+    seasonId:ID!
     standingSet:[CricketStandingSet]
+}
+type LineupPlayer{
+    playerId:ID!,
+    playerName:String!,
+    playerNumber:Int!,
+    formatPosition:String!,
+}
+type Lineup{
+    team:Int!,
+    players:[LineupPlayer],
+    formation:[Int!]!,
+    coach:String!,
+}
+type Sub{
+    minute:Int!,
+    minuteExtended:Int,
+    team:Int!,
+    subOutPlayerId:ID!,
+    subInPlayerId:ID!,
+    subOutPlayerName:String!,
+    subInPlayerName:String!,
+}
+type Stats{
+    fouls:Int!,
+    throws:Int!,
+    offsides:Int!,
+    possession:Int!,
+    crosses:Int!,
+    corners:Int!,
+    yellowCards:Int!,
+    redCards:Int!,
+    shotsOnTarget:Int!,
+    shotsOffTarget:Int!,
+}
+type Incident {
+    minute:Int!,
+    team:Int!,
+    playerName:String,
+    incident:String!,
+    minuteExtended:Int,
+    score:[Int],
+    hasAssisted:Boolean
+    scorer:String,
+    assister:String
+}
+type FootballLineup{
+    lineups:[Lineup],
+    subs:[Sub],
+}
+type FootballInfo{
+    venue:String!,
+    spectators:Int!,
+    refName:String!,
+    refCountry:String,
+}
+type FootballStats{
+    homeTeam:Stats!,
+    awayTeam:Stats!,
+}
+type FootballSummary{
+    homeHTScore:Int!,
+    awayHTScore:Int!,
+    homeFTScore:Int!,
+    awayFTScore:Int!,
+    firstHalfIncidents:[Incident!]!,
+    secondHalfIncidents:[Incident!]!,
 }
 
 type RootMutation{
@@ -99,15 +167,21 @@ type RootMutation{
 }
 
 type RootQuery {
-    getFootballMatches(date:String!):[MatchList!]
-    getBasketballMatches(date:String!):[MatchList!]
-    getCricketMatches(date:String!):[MatchList!]
-    getLiveFootballMatches:[MatchList]
-    getLiveBasketballMatches:[MatchList]
-    getLiveCricketMatches:[MatchList]
+    getFootballMatches(date:String!,timeZoneDiff:String!):MatchContainer!
+    getBasketballMatches(date:String!):MatchContainer!
+    getCricketMatches(date:String!):MatchContainer!
+    getLiveFootballMatches:MatchContainer!
+    getLiveBasketballMatches:MatchContainer
+    getLiveCricketMatches:MatchContainer
     getFootballDetails(compId:Int!):FootballDetail!
-    getBasketballDetails(uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):BasketballDetail!
-    getCricketDetails(compId:Int!,uniqueId:Int!,appSeasonId:Int,dateState:String,page:Int):CricketDetail!
+    getBasketballDetails(uniqueId:Int!,dateState:String!):BasketballDetail!
+    getCricketDetails(compId:Int!,dateState:String!,uniqueId:Int!):CricketDetail!
+    getBasketballCompMatches(uniqueId:Int!,appSeasonId:ID!,dateState:String!,page:Int):CompetitionMatches!
+    getCricketCompMatches(compId:Int!,uniqueId:Int!,appSeasonId:ID!,dateState:String!,page:Int):CompetitionMatches!
+    getFootballMatchLineup(matchId:Int!):FootballLineup!
+    getFootballMatchInfo(matchId:Int!):FootballInfo!
+    getFootballMatchStats(matchId:Int!):FootballStats!
+    getFootballMatchSummary(matchId:Int!):FootballSummary!
 }
 schema {
     query:RootQuery
