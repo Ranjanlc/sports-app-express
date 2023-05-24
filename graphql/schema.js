@@ -150,8 +150,9 @@ type FootballInfo{
     refCountry:String,
 }
 type FootballStats{
-    homeTeam:Stats!,
-    awayTeam:Stats!,
+    stat:String!,
+    home:Int!,
+    away:Int!,
 }
 type FootballSummary{
     homeHTScore:Int!,
@@ -180,7 +181,7 @@ type RootQuery {
     getCricketCompMatches(compId:Int!,uniqueId:Int!,appSeasonId:ID!,dateState:String!,page:Int):CompetitionMatches!
     getFootballMatchLineup(matchId:Int!):FootballLineup!
     getFootballMatchInfo(matchId:Int!):FootballInfo!
-    getFootballMatchStats(matchId:Int!):FootballStats!
+    getFootballMatchStats(matchId:Int!):[FootballStats!]!
     getFootballMatchSummary(matchId:Int!):FootballSummary!
 }
 schema {

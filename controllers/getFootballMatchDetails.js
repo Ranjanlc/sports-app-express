@@ -124,7 +124,15 @@ const getStats = async (matchId) => {
   });
   const homeTeam = refinedStatistics.find((el) => el.team === 1);
   const awayTeam = refinedStatistics.find((el) => el.team === 2);
-  return { homeTeam, awayTeam };
+  const statsList = Object.keys(homeTeam);
+  console.log(statsList);
+  const statsContainer = [];
+  statsList.forEach((stat) => {
+    if (stat === 'team') return;
+    statsContainer.push({ stat, home: homeTeam[stat], away: awayTeam[stat] });
+  });
+  console.log(statsContainer);
+  return statsContainer;
 };
 const getSummary = async (matchId) => {
   const url = `${BASE_URL}/incidents?sport=soccer&event_id=${matchId}&locale=EN`;
