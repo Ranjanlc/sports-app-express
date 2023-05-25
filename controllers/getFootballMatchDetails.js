@@ -1,16 +1,35 @@
-const { footballApiOptions, getIncident } = require('../util/transform-data');
+const {
+  footballApiOptions,
+  getIncident,
+  getFootballStandings,
+  refinePlayerName,
+} = require('../util/transform-data');
 const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
   const url = `${BASE_URL}/info?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
+  console.log(res);
   const {
     DATA: {
       VENUE_NAME: venue,
       SPECTATORS_NUMBER: spectators,
       REFS: [{ NAME: refName, REFEREE_COUNTRY_NAME: refCountry }],
+      MATCH_START_DATE: matchStartDate,
     },
   } = await res.json();
-  return { venue, spectators, refName, refCountry };
+  // The slicing coz we get date in a weird format.
+  const dirtyStartDate = String(matchStartDate).slice(0, 8);
+  const slicedDate = `${dirtyStartDate.slice(0, 4)}-${dirtyStartDate.slice(
+    4,
+    6
+  )}-${dirtyStartDate.slice(6, 8)}`;
+  // en-UK coz it looks more suitable
+  const startDate = new Date(slicedDate).toLocaleString('en-UK', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
+  return { venue, spectators, refName, refCountry, startDate };
 };
 const getLineups = async (matchId) => {
   const url = `${BASE_URL}/lineups?sport=soccer&event_id=${matchId}&locale=EN`;
@@ -88,6 +107,30 @@ const getLineups = async (matchId) => {
   }
   return { lineups: refinedLineups, subs: subsContainer };
 };
+const refineStats = (slug) => {
+  const splittedSlug = slug.split('_');
+  const slugLength = splittedSlug.length;
+  let camelCaseStat, displayStat;
+  if (slugLength === 1) {
+    camelCaseStat = slug.toLowerCase();
+    displayStat = slug.slice(0, 1) + slug.slice(1).toLowerCase();
+  }
+  if (slugLength !== 1) {
+    const intermediateCamelSlug = splittedSlug
+      .map((el) => el.slice(0, 1) + el.slice(1).toLowerCase())
+      .join('');
+    camelCaseStat =
+      intermediateCamelSlug.slice(0, 1).toLowerCase() +
+      intermediateCamelSlug.slice(1);
+    const intermediateDisplaySlug = splittedSlug
+      .map((el) => el.toLowerCase())
+      .join(' ');
+    displayStat =
+      intermediateDisplaySlug.slice(0, 1).toUpperCase() +
+      intermediateDisplaySlug.slice(1);
+  }
+  return { camelCaseStat, displayStat };
+};
 const getStats = async (matchId) => {
   const url = `${BASE_URL}/statistics?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
@@ -98,11 +141,11 @@ const getStats = async (matchId) => {
     const {
       TEAM_NUMBER: team,
       FOULS: fouls,
-      THROW_INS: throws,
+      THROW_INS: throwIns,
       OFFSIDES: offsides,
       POSSESSION: possession,
       CROSSES: crosses,
-      CORNER_KICKS: corners,
+      CORNER_KICKS: cornerKicks,
       YELLOW_CARDS: yellowCards,
       RED_CARDS: redCards,
       SHOTS_ON_TARGET: shotsOnTarget,
@@ -111,11 +154,11 @@ const getStats = async (matchId) => {
     return {
       team,
       fouls,
-      throws,
+      throwIns,
       offsides,
       possession,
       crosses,
-      corners,
+      cornerKicks,
       yellowCards,
       redCards,
       shotsOnTarget,
@@ -124,14 +167,29 @@ const getStats = async (matchId) => {
   });
   const homeTeam = refinedStatistics.find((el) => el.team === 1);
   const awayTeam = refinedStatistics.find((el) => el.team === 2);
-  const statsList = Object.keys(homeTeam);
+  const statsList = Object.keys(statistics.at(0)).filter(
+    (el) =>
+      !(el === 'TREATMENTS') &&
+      !(el === 'Shwd') &&
+      !(el === 'BLOCKED_SHOTS') &&
+      !(el === 'COUNTER_ATTACKS') &&
+      !(el === 'YRcs') &&
+      !(el === 'GOALKEEPER_SAVES') &&
+      !(el === 'GOAL_KICKS') &&
+      !(el === 'TEAM_NUMBER')
+  );
   console.log(statsList);
   const statsContainer = [];
   statsList.forEach((stat) => {
-    if (stat === 'team') return;
-    statsContainer.push({ stat, home: homeTeam[stat], away: awayTeam[stat] });
+    const { camelCaseStat, displayStat } = refineStats(stat);
+    // console.log(camelCaseStat, displayStat);
+    statsContainer.push({
+      stat: displayStat,
+      home: homeTeam[camelCaseStat],
+      away: awayTeam[camelCaseStat],
+    });
   });
-  console.log(statsContainer);
+  // console.log(statsContainer);
   return statsContainer;
 };
 const getSummary = async (matchId) => {
@@ -139,10 +197,14 @@ const getSummary = async (matchId) => {
   const res = await fetch(url, footballApiOptions);
   const {
     DATA: {
-      HOME_SCORE: homeFTScore,
-      AWAY_SCORE: awayFTScore,
+      HOME_SCORE: homeScore,
+      AWAY_SCORE: awayScore,
+      HOME_FULL_TIME_SCORE: homeFTScore,
+      AWAY_FULL_TIME_SCORE: awayFTScore,
       HOME_HALF_TIME_SCORE: homeHTScore,
       AWAY_HALF_TIME_SCORE: awayHTScore,
+      HOME_PENALTY_SHOOT_OUT_PERIOD_SCORE: homeShootoutScore,
+      AWAY_PENALTY_SHOOT_OUT_PERIOD_SCORE: awayShootoutScore,
       INCIDENTS: dirtyIncidents,
     },
   } = await res.json();
@@ -160,11 +222,11 @@ const getSummary = async (matchId) => {
       } = el;
       const baseObj = { minute, team, minuteExtended };
       if (!score) {
-        baseObj.playerName = playerName;
+        baseObj.playerName = refinePlayerName(playerName);
         baseObj.incident = getIncident(incidentType);
       }
       if (score && incidentType) {
-        baseObj.playerName = playerName;
+        baseObj.playerName = refinePlayerName(playerName);
         baseObj.incident = getIncident(incidentType);
         baseObj.hasAssisted = false;
         baseObj.score = score;
@@ -173,9 +235,10 @@ const getSummary = async (matchId) => {
         const [{ PLAYER_NAME: scorer }, { PLAYER_NAME: assister }] =
           innerIncidents;
         baseObj.hasAssisted = true;
-        baseObj.scorer = scorer;
-        baseObj.assister = assister;
+        baseObj.scorer = refinePlayerName(scorer);
+        baseObj.assister = refinePlayerName(assister);
         baseObj.incident = 'goal';
+        baseObj.score = score;
       }
       // console.log(baseObj);
       return baseObj;
@@ -183,7 +246,7 @@ const getSummary = async (matchId) => {
     return incident;
   });
   const [firstHalfIncidents, secondHalfIncidents] = incidents;
-  return {
+  const baseObj = {
     homeFTScore,
     awayFTScore,
     homeHTScore,
@@ -191,5 +254,71 @@ const getSummary = async (matchId) => {
     firstHalfIncidents,
     secondHalfIncidents,
   };
+  if (incidents.length === 2) {
+    return baseObj;
+  }
+  if (incidents.length === 4) {
+    const [__, _, extraFirstHalfIncidents, extraSecondHalfIncidents] =
+      incidents;
+    const penaltyShootout = [];
+    extraSecondHalfIncidents.forEach((incidentSet) => {
+      const { incident, playerName, score, team } = incidentSet;
+      if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
+        penaltyShootout.push({ incident, playerName, score, team });
+      }
+    });
+    if (penaltyShootout.length !== 0) {
+      return {
+        ...baseObj,
+        extraTimeIncidents: [
+          extraFirstHalfIncidents,
+          extraSecondHalfIncidents.filter(
+            (incidentSet) =>
+              !(incidentSet.incident === 'shootOutPen') &&
+              !(incidentSet.incident === 'shootOutMiss')
+          ),
+        ].flat(),
+        penaltyShootout,
+        homeScore,
+        awayScore,
+        homeShootoutScore,
+        awayShootoutScore,
+      };
+    }
+    return {
+      ...baseObj,
+      extraTimeIncidents: [
+        extraFirstHalfIncidents,
+        extraSecondHalfIncidents,
+      ].flat(),
+      homeScore,
+      awayScore,
+    };
+  }
 };
-module.exports = { getLineups, getInfo, getStats, getSummary };
+const getTable = async (compId) => {
+  const res = await fetch(
+    `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=${compId}&locale=EN`,
+    footballApiOptions
+  );
+  if (res.status === 404) {
+    const error = new Error("Can't fetch standings");
+    error.code = 404;
+    throw error;
+  }
+  const { DATA: standingData } = await res.json();
+  // console.log(res);
+  let standings;
+  if (standingData.length === 0) standings = [];
+  if (standingData.length > 1) {
+    // flatMap coz there would be two arrays,one from the map itself and from destructureStandings and as it doesnt fit schema,we flatMap.
+    standings = standingData.flatMap((item) => {
+      return getFootballStandings(item, true);
+    });
+  }
+  if (standingData.length === 1) {
+    standings = getFootballStandings(standingData[0]);
+  }
+  return standings;
+};
+module.exports = { getLineups, getInfo, getStats, getSummary, getTable };

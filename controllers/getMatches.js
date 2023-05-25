@@ -223,10 +223,12 @@ const getMatches = async (date, sport, live = false) => {
       homeTeam: {
         name: homeTeamName,
         imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
+        id: homeTeamId,
       },
       awayTeam: {
         name: awayTeamName,
         imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
+        id: awayTeamId,
       },
       startTime: getMatchDate(startTimestamp),
     };
@@ -380,12 +382,14 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
           imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
             homeTeam.at(0).BADGE_ID
           }.png`,
+          id: homeTeam.at(0).ID,
         },
         awayTeam: {
           name: awayTeam.at(0).NAME,
           imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
             awayTeam.at(0).BADGE_ID
           }.png`,
+          id: awayTeam.at(0).ID,
         },
         startTime: live
           ? dirtyStartTime

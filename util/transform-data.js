@@ -129,10 +129,12 @@ const refineEvents = (boilerData, sport, dateState) => {
     homeTeam: {
       name: homeTeamName,
       imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
+      id: homeTeamId,
     },
     awayTeam: {
       name: awayTeamName,
       imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
+      id: awayTeamId,
     },
     startTime: getMatchDate(startTimestamp),
     // will note set if it is basketball
@@ -283,7 +285,6 @@ const getFootballStandings = (data, setGroup = false) => {
       points,
     };
   });
-  console.log(standings);
   return standings;
 };
 const refineStandings = (compData, sport) => {
@@ -342,12 +343,28 @@ const getIncident = (incidentNum) => {
     [45, 'redCard'],
     [43, 'yellowCard'],
     [36, 'goal'],
-    [40, 'shootOutMissedPen'],
+    [40, 'shootOutMiss'],
     [41, 'shootOutPen'],
   ]);
   // If we get unknown number
   const incident = incidentMap.get(incidentNum) || 'Unknown';
   return incident;
+};
+const refinePlayerName = (name) => {
+  const splittedName = name.split(' ');
+  const splittedNameLength = splittedName.length;
+  if (splittedNameLength === 1) return name;
+  if (splittedNameLength === 2) {
+    return `${splittedName[0].slice(0, 1)}.${splittedName[1]}`;
+  }
+  if (splittedNameLength === 3) {
+    return `${splittedName[0].slice(0, 1)}.${splittedName[1]}${
+      splittedName[2]
+    }`;
+  }
+  if (splittedNameLength >= 3) {
+    return `${splittedName[0]} ${splittedName.at(-1)}`;
+  }
 };
 module.exports = {
   getMatchDate,
@@ -362,4 +379,5 @@ module.exports = {
   refineFootballDate,
   topClubs,
   getIncident,
+  refinePlayerName,
 };

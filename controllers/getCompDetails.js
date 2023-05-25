@@ -54,6 +54,7 @@ const getFootballCompDetails = async (compId) => {
       MATCH_STATUS: matchStatus,
       HOME_SCORE: homeScore,
       AWAY_SCORE: awayScore,
+      WHICH_TEAM_WON: winnerTeam,
     } = unfilteredEvent;
     const event = {
       matchId,
@@ -62,15 +63,18 @@ const getFootballCompDetails = async (compId) => {
         imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
           homeTeam.at(0).BADGE_ID
         }.png`,
+        id: homeTeam.at(0).ID,
       },
       awayTeam: {
         name: awayTeam.at(0).NAME,
         imageUrl: `https://lsm-static-prod.livescore.com/high/enet/${
           awayTeam.at(0).BADGE_ID
         }.png`,
+        id: awayTeam.at(0).ID,
       },
       startTime,
       matchStatus,
+      winnerTeam,
     };
     if (matchStatus !== 'NS') {
       event.homeScore = homeScore;

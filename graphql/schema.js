@@ -2,6 +2,7 @@ const { buildSchema } = require('graphql');
 module.exports = buildSchema(`
 type Team {
     name:String!
+    id:ID!
     imageUrl:String!
     isBatting:Boolean
 }
@@ -116,20 +117,8 @@ type Sub{
     subOutPlayerName:String!,
     subInPlayerName:String!,
 }
-type Stats{
-    fouls:Int!,
-    throws:Int!,
-    offsides:Int!,
-    possession:Int!,
-    crosses:Int!,
-    corners:Int!,
-    yellowCards:Int!,
-    redCards:Int!,
-    shotsOnTarget:Int!,
-    shotsOffTarget:Int!,
-}
 type Incident {
-    minute:Int!,
+    minute:Int,
     team:Int!,
     playerName:String,
     incident:String!,
@@ -145,9 +134,10 @@ type FootballLineup{
 }
 type FootballInfo{
     venue:String!,
-    spectators:Int!,
+    spectators:Int,
     refName:String!,
-    refCountry:String,
+    refCountry:String!,
+    startDate:String!
 }
 type FootballStats{
     stat:String!,
@@ -159,8 +149,14 @@ type FootballSummary{
     awayHTScore:Int!,
     homeFTScore:Int!,
     awayFTScore:Int!,
+    homeScore:Int,
+    awayScore:Int,
+    homeShootoutScore:Int,
+    awayShootoutScore:Int,
     firstHalfIncidents:[Incident!]!,
     secondHalfIncidents:[Incident!]!,
+    extraTimeIncidents:[Incident],
+    penaltyShootout:[Incident],
 }
 
 type RootMutation{
@@ -183,6 +179,7 @@ type RootQuery {
     getFootballMatchInfo(matchId:Int!):FootballInfo!
     getFootballMatchStats(matchId:Int!):[FootballStats!]!
     getFootballMatchSummary(matchId:Int!):FootballSummary!
+    getFootballMatchTable(compId:Int!):[FootballStanding!]!
 }
 schema {
     query:RootQuery

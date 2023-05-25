@@ -12,6 +12,7 @@ const {
   getStats,
   getLineups,
   getSummary,
+  getTable,
 } = require('../controllers/getFootballMatchDetails');
 
 exports.getFootballMatches = ({ date, timeZoneDiff }) => {
@@ -87,4 +88,7 @@ exports.getFootballMatchStats = async ({ matchId }) => {
 };
 exports.getFootballMatchSummary = async ({ matchId }) => {
   return getSummary(matchId);
+};
+exports.getFootballMatchTable = async ({ compId }) => {
+  return getTable(compId);
 };
