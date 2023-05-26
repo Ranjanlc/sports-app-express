@@ -8,7 +8,6 @@ const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
   const url = `${BASE_URL}/info?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
-  console.log(res);
   const {
     DATA: {
       VENUE_NAME: venue,

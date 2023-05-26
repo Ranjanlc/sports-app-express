@@ -97,7 +97,7 @@ type CricketDetail{
     standingSet:[CricketStandingSet]
 }
 type LineupPlayer{
-    playerId:ID!,
+    playerId:ID,
     playerName:String!,
     playerNumber:Int!,
     formatPosition:String!,
