@@ -4,177 +4,12 @@ const {
   footballApiOptions,
   sportApiOptions,
   refineFootballDate,
-  topClubs,
+  handleError,
 } = require('../util/transform-data');
-const checkFeatured = (eventSet, sport, randomNo, slug) => {
-  const events = eventSet.filter((event) => {
-    const {
-      homeTeam: { name: homeTeamName },
-      awayTeam: { name: awayTeamName },
-    } = event;
-    // The sport and slug gives dynamic value of a sport and league slug to access in topClubs object
-    const includesTopClub =
-      topClubs[sport][slug].includes(homeTeamName) ||
-      topClubs[sport][slug].includes(awayTeamName);
-    if (includesTopClub) return event;
-  });
-  if (randomNo > events?.length - 1) {
-    randomNo = events?.length - 1;
-  }
-  // const featuredEvent =  || [];
-  //If array is empty,at method will give us undefined.
-  return events.at(randomNo);
-};
-
-const getFeaturedMatches = (competitionSet, sport, randomNo) => {
-  const featuredEvent = competitionSet.reduce((acc, comp) => {
-    // We dont push anymore if we already have one featured event
-    if (acc.length !== 0) return acc;
-    const { events: eventSet, competitionName } = comp;
-    if (sport === 'football') {
-      switch (competitionName) {
-        case 'Premier League':
-          const premierEvent = checkFeatured(
-            eventSet,
-            'football',
-            randomNo,
-            'pl'
-          );
-          premierEvent && acc.push(premierEvent);
-          //  acc.push(premierEvent);
-          break;
-        case 'LaLiga Santander':
-          const ligaEvent = checkFeatured(
-            eventSet,
-            'football',
-            randomNo,
-            'laLiga'
-          );
-          ligaEvent && acc.push(ligaEvent);
-          break;
-        case 'Serie A':
-          const serieEvent = checkFeatured(
-            eventSet,
-            'football',
-            randomNo,
-            'serieA'
-          );
-          serieEvent && acc.push(serieEvent);
-          break;
-        case 'Ligue 1':
-          const ligueEvent = checkFeatured(
-            eventSet,
-            'football',
-            randomNo,
-            'ligue1'
-          );
-          ligueEvent && acc.push(ligueEvent);
-          break;
-        case 'Bundesliga':
-          const bundesEvent = checkFeatured(
-            eventSet,
-            'football',
-            randomNo,
-            'bundesliga'
-          );
-          bundesEvent && acc.push(bundesEvent);
-          break;
-        default:
-          // acc.push('OTHERR');
-          break;
-      }
-    }
-    if (sport === 'basketball') {
-      switch (competitionName) {
-        case 'NBA':
-          const nbaEvent = checkFeatured(
-            eventSet,
-            'basketball',
-            randomNo,
-            'nba'
-          );
-          nbaEvent && acc.push(nbaEvent);
-          break;
-        case 'LNB':
-          const ligaEvent = checkFeatured(
-            eventSet,
-            'basketball',
-            randomNo,
-            'lnb'
-          );
-          ligaEvent && acc.push(ligaEvent);
-          break;
-        case 'A1':
-          const a1Event = checkFeatured(eventSet, 'basketball', randomNo, 'a1');
-          a1Event && acc.push(a1Event);
-          break;
-        case 'Serie A':
-          const serieEvent = checkFeatured(
-            eventSet,
-            'basketball',
-            randomNo,
-            'serieA'
-          );
-          serieEvent && acc.push(serieEvent);
-          break;
-        case 'Liga ACB':
-          const ligaACBEvent = checkFeatured(
-            eventSet,
-            'basketball',
-            randomNo,
-            'ligaACB'
-          );
-          ligaACBEvent && acc.push(ligaACBEvent);
-          break;
-        default:
-          break;
-      }
-    }
-    if (sport === 'cricket') {
-      switch (competitionName) {
-        case 'Indian Premier League':
-          const iplEvent = checkFeatured(eventSet, 'cricket', randomNo, 'ipl');
-          iplEvent && acc.push(iplEvent);
-          break;
-        case 'Pakistan Super League':
-          const pslEvent = checkFeatured(eventSet, 'cricket', randomNo, 'psl');
-          pslEvent && acc.push(pslEvent);
-          break;
-        case 'Big Bash League':
-          const bashEvent = checkFeatured(eventSet, 'cricket', randomNo, 'bbl');
-          bashEvent && acc.push(bashEvent);
-          break;
-        case 'Serie A':
-          const serieEvent = checkFeatured(
-            eventSet,
-            'cricket',
-            randomNo,
-            'serieA'
-          );
-          serieEvent && acc.push(serieEvent);
-          break;
-        default:
-          break;
-      }
-    }
-    return acc;
-  }, []);
-  // console.log(featuredEvent);
-  if (featuredEvent?.length === 0) {
-    // console.log('chiryoo');
-    const { events } = competitionSet[0];
-    if (randomNo > events?.length - 1) {
-      // console.log('entereeedd');
-      randomNo = events?.length - 1;
-    }
-    return events[randomNo];
-  }
-  return featuredEvent.at(0);
-};
-
+const { getFeaturedMatches } = require('./getFeaturedMatches');
 const getMatches = async (date, sport, live = false) => {
   // Sport id of basketball is 2 and cricket is 62.
-  // console.log(date);
+
   const res = await fetch(
     `https://sofasport.p.rapidapi.com/v1/events/schedule/${
       live ? 'live?' : `date?date=${date}&`
@@ -182,11 +17,8 @@ const getMatches = async (date, sport, live = false) => {
     sportApiOptions
   );
   if (res.status === 404) {
-    const error = new Error("Can't fetch cricket/basketball matches");
-    error.code = 404;
-    throw error;
+    handleError('cricket/basketball matches');
   }
-  // console.log(await res.json());
   const { data } = await res.json();
   if (data?.length === 0) {
     return [];
@@ -316,7 +148,6 @@ const getMatches = async (date, sport, live = false) => {
   }
   return { matches: refinedData, featuredMatch };
 };
-
 const getFootballMatches = async (date, timeZoneDiff, live = false) => {
   // To transform the timeZone given from the user
   const [dirtyTimeZoneHour, timeZoneMinute] = !live
@@ -329,15 +160,11 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
   const URL = `https://livescore-sports.p.rapidapi.com/v1/events/${
     live ? 'live?' : `list?date=${date}&`
   }locale=EN&${live ? 'timezone=0' : `timezone=${timeZoneHour}`}&sport=soccer`;
-  // console.log(URL);
   const res = await fetch(URL, footballApiOptions);
   if (res.status === 404) {
-    const error = new Error("Can't fetch football matches");
-    error.code = 404;
-    throw error;
+    handleError('football matches');
   }
   const { DATA: data } = await res.json();
-  // console.log(data);
   let minimizedSet;
   if (data?.length === 0) {
     return [];
@@ -361,8 +188,6 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
     });
   }
   const refinedSet = minimizedSet.map((set) => {
-    // TODO:Use destructuring syntax to make it easy.
-    // console.log(set.EVENTS);
     const events = set.EVENTS.map((unfilteredEvent) => {
       const {
         MATCH_ID: matchId,
@@ -374,7 +199,6 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
         AWAY_SCORE: awayScore,
         WHICH_TEAM_WON: winnerTeam,
       } = unfilteredEvent;
-      // console.log(homeTeam.at(0), awayTeam.at(0));
       const event = {
         matchId,
         homeTeam: {
@@ -421,11 +245,9 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
   });
   // Random no. is gotten by first splitting date and taking out second's position which gives us day and we take last value of the day,if it is 26 it gives 6 and we convert it to number and mod by 5.
   // it is constant for one day.
-  // console.log(refinedSet);
   const todaysRandomNo = !live && +date.split('-').at(2).at(-1) % 5;
   const featuredMatch =
     !live && getFeaturedMatches(refinedSet, 'football', todaysRandomNo);
-  // console.log(featuredMatch);
   if (live) {
     return { matches: refinedSet };
   }

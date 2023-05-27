@@ -17,6 +17,11 @@ type Event {
     winnerTeam:Int
     note:String
 }
+type FeaturedMatch{
+   event:Event!,
+   competitionName:String!,
+   competitionId:ID,   
+}
 type MatchList {
     competitionName:String!
     competitionId:ID
@@ -25,10 +30,7 @@ type MatchList {
     venue:String!
     events:[Event!]!
 }
-type MatchContainer{
-    matches:[MatchList!]
-    featuredMatch:Event
-}
+
 type FootballStanding {
     group:String
     teamId:ID!
@@ -78,24 +80,6 @@ type FootballMatches{
     fixtures:[Event!]!
     results:[Event!]!
 }
-type CompetitionMatches{
-    matches:[Event!]!
-    hasNextPage:Boolean!
-}
-type FootballDetail {
-    matches:FootballMatches!
-    standings:[FootballStanding]
-}
-type BasketballDetail{
-    matchSet:CompetitionMatches
-    seasonId:ID! 
-    standingSet:[BasketballStandingSet]
-}
-type CricketDetail{
-    matchSet:CompetitionMatches
-    seasonId:ID!
-    standingSet:[CricketStandingSet]
-}
 type LineupPlayer{
     playerId:ID,
     playerName:String!,
@@ -128,8 +112,30 @@ type Incident {
     scorer:String,
     assister:String
 }
+type MatchContainer{
+    matches:[MatchList!]
+    featuredMatch:FeaturedMatch!,
+}
+type FootballDetail {
+    matches:FootballMatches!
+    standings:[FootballStanding]
+}
+type BasketballDetail{
+    matchSet:CompetitionMatches
+    seasonId:ID! 
+    standingSet:[BasketballStandingSet]
+}
+type CricketDetail{
+    matchSet:CompetitionMatches
+    seasonId:ID!
+    standingSet:[CricketStandingSet]
+}
+type CompetitionMatches{
+    matches:[Event!]!
+    hasNextPage:Boolean!
+}
 type FootballLineup{
-    lineups:[Lineup],
+    lineups:[Lineup!]!,
     subs:[Sub],
 }
 type FootballInfo{
@@ -154,7 +160,7 @@ type FootballSummary{
     homeShootoutScore:Int,
     awayShootoutScore:Int,
     firstHalfIncidents:[Incident!]!,
-    secondHalfIncidents:[Incident!]!,
+    secondHalfIncidents:[Incident!],
     extraTimeIncidents:[Incident],
     penaltyShootout:[Incident],
 }

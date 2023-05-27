@@ -11,7 +11,7 @@ const sportApiOptions = {
     'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
   },
 };
-const topClubs = {
+const TOP_CLUBS = {
   football: {
     pl: [
       'Liverpool',
@@ -56,7 +56,6 @@ const topClubs = {
     psl: ['Multan Sultans', 'Islamabad United', 'Lahore Qalandars'],
   },
 };
-
 const getMatchDate = (timeStamp) => {
   const dateObj = new Date(+timeStamp * 1000);
   const year = dateObj.getFullYear();
@@ -104,76 +103,10 @@ const refineFootballDate = (dirtyStartTime, timeZoneDiff) => {
     hour12: false,
   });
   const [date, time] = localeDate.split(',');
-  // console.log(date, time);
   // Because it is the format of en-Us.
   const [month, day, year] = date.split('/');
-  // console.log(`${year}-${month}-${day}${time}`);
   // To convert it into same form as APIs'.
   return `${year}-${month}-${day}${time}`;
-};
-const refineEvents = (boilerData, sport, dateState) => {
-  const {
-    id: matchId,
-    status: { description: matchStatus },
-    homeTeam: { name: homeTeamName, id: homeTeamId },
-    awayTeam: { name: awayTeamName, id: awayTeamId },
-    homeScore, //complexity coz of API's name.
-    awayScore,
-    winnerCode: winnerTeam,
-    startTimestamp,
-    note,
-  } = boilerData;
-  const event = {
-    matchId,
-    matchStatus,
-    homeTeam: {
-      name: homeTeamName,
-      imageUrl: `https://api.sofascore.app/api/v1/team/${homeTeamId}/image`,
-      id: homeTeamId,
-    },
-    awayTeam: {
-      name: awayTeamName,
-      imageUrl: `https://api.sofascore.app/api/v1/team/${awayTeamId}/image`,
-      id: awayTeamId,
-    },
-    startTime: getMatchDate(startTimestamp),
-    // will note set if it is basketball
-    [sport === 'cricket' && 'note']:
-      matchStatus === 'Ended' ? note : matchStatus,
-  };
-  if (dateState === 'last') {
-    event.winnerTeam = winnerTeam;
-    if (sport === 'basketball') {
-      event.homeScore = homeScore.display;
-      event.awayScore = awayScore.display;
-    }
-    if (sport === 'cricket') {
-      const { currentBattingTeamId: battingId } = boilerData;
-      if (battingId === homeTeamId) {
-        event.homeTeam.isBatting = true;
-      }
-      if (battingId === awayTeamId) {
-        event.awayTeam.isBatting = true;
-      }
-      const { displayHomeScore, displayAwayScore } = refineInnings(
-        homeScore,
-        awayScore
-      );
-      event.homeScore = displayHomeScore;
-      event.awayScore = displayAwayScore;
-      //Overwriting default matchStatus notes with below.
-      if (matchStatus === 'Not Started') {
-        event.note = 'Not Started Yet';
-      }
-      if (matchStatus === 'Abandoned') {
-        event.note = 'Match abandoned without a ball bowled';
-      }
-      if (matchStatus === 'Interrupted') {
-        event.note = 'Match was interrupted.';
-      }
-    }
-  }
-  return event;
 };
 const refineInnings = (homeScore, awayScore) => {
   const { display: homeDisplay, innings: homeInnings } = homeScore;
@@ -247,124 +180,10 @@ const refineInnings = (homeScore, awayScore) => {
   }
   return { displayHomeScore, displayAwayScore };
 };
-const getFootballStandings = (data, setGroup = false) => {
-  const {
-    LEAGUE_TABLE: { L },
-  } = data;
-  const { TABLES: table } = L[0];
-  const { TEAM: teams } = table[0];
-  const standings = teams.map((team) => {
-    const {
-      TEAM_ID: teamId,
-      BADGE_ID: badgeId,
-      RANK: position,
-      TEAM_NAME: name,
-      TEAM_PLAYED: played,
-      WINS_INT: wins,
-      DRAWS_INT: draws,
-      LOSES_INT: loses,
-      GOAL_FOR: GF,
-      GOAL_AGAINST: GA,
-      GOAL_DIFFERENCE: GD,
-      POINTS_INT: points,
-    } = team;
-    countryCode = setGroup && data.COUNTRY_CODE;
-    return {
-      [setGroup && 'group']: countryCode,
-      teamId: +teamId,
-      teamImageUrl: `https://lsm-static-prod.livescore.com/medium/enet/${badgeId}.png`,
-      position,
-      name,
-      played,
-      wins,
-      draws,
-      loses,
-      GF,
-      GA,
-      GD,
-      points,
-    };
-  });
-  return standings;
-};
-const refineStandings = (compData, sport) => {
-  const { rows: standingSet } = compData;
-  const standings = standingSet.map((teamData) => {
-    const {
-      team: { name, id: teamId },
-      position,
-      wins,
-      losses,
-      points,
-      percentage,
-      matches: played,
-      netRunRate,
-    } = teamData;
-    if (sport === 'cricket') {
-      return {
-        name,
-        teamId,
-        teamImageUrl: `https://api.sofascore.app/api/v1/team/${teamId}/image`,
-        position,
-        points,
-        played,
-        wins,
-        losses,
-        netRunRate,
-      };
-    }
-    if (sport === 'basketball') {
-      return {
-        name,
-        teamId,
-        teamImageUrl: `https://api.sofascore.app/api/v1/team/${teamId}/image`,
-        position,
-        [points && 'points']: points,
-        played,
-        wins,
-        losses,
-        percentage,
-      };
-    }
-  });
-  // console.log(standings);
-  return standings;
-};
-const getIncident = (incidentNum) => {
-  const incidentMap = new Map([
-    [63, 'assist'],
-    [62, 'canceledGoal'],
-    [47, 'goal'],
-    [70, 'ownGoal'],
-    [57, 'penalty'],
-    [38, 'missedPenalty'],
-    [39, 'ownGoal'],
-    [37, 'penalty'],
-    [45, 'redCard'],
-    [43, 'yellowCard'],
-    [36, 'goal'],
-    [40, 'shootOutMiss'],
-    [41, 'shootOutPen'],
-  ]);
-  // If we get unknown number
-  const incident = incidentMap.get(incidentNum) || 'Unknown';
-  return incident;
-};
-const refinePlayerName = (name) => {
-  const splittedName = name.split(' ');
-  const splittedNameLength = splittedName.length;
-  if (splittedNameLength === 1) return name;
-  if (splittedNameLength === 2) {
-    return `${splittedName[0].slice(0, 1)}.${splittedName[1]}`;
-  }
-  if (splittedNameLength === 3) {
-    return `${splittedName[0].slice(0, 1)}.${splittedName[1]}${
-      splittedName[2]
-    }`;
-  }
-  if (splittedNameLength >= 3) {
-    return `${splittedName[0]} ${splittedName.at(-1)}`;
-  }
+const handleError = (name) => {
+  const error = new Error(`Can't fetch ${name}`);
+  error.code = 404;
+  throw error;
 };
 module.exports = {
   getMatchDate,
@@ -373,11 +192,7 @@ module.exports = {
   API_KEY,
   footballApiOptions,
   sportApiOptions,
-  getFootballStandings,
-  refineStandings,
-  refineEvents,
   refineFootballDate,
-  topClubs,
-  getIncident,
-  refinePlayerName,
+  TOP_CLUBS,
+  handleError,
 };

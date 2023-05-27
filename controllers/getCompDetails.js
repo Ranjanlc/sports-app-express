@@ -1,10 +1,13 @@
 const {
-  getFootballStandings,
-  refineStandings,
-  refineEvents,
   footballApiOptions,
   sportApiOptions,
+  handleError,
 } = require('../util/transform-data');
+const {
+  refineEvents,
+  refineStandings,
+  getFootballStandings,
+} = require('../util/competition-helper');
 const getFootballURL = (compId, mode) => {
   return `https://livescore-sports.p.rapidapi.com/v1/competitions/${mode}?timezone=0&competition_id=${compId}&locale=EN`;
 };
@@ -18,14 +21,10 @@ const getFootballCompDetails = async (compId) => {
     footballApiOptions
   );
   if (res.status === 404) {
-    const error = new Error("Can't fetch competition details");
-    error.code = 404;
-    throw error;
+    handleError('competition details');
   }
   if (res1.status === 404) {
-    const error = new Error("Can't fetch standings");
-    error.code = 404;
-    throw error;
+    handleError('standings');
   }
   const {
     DATA: { STAGES },
@@ -88,11 +87,9 @@ const getFootballCompDetails = async (compId) => {
   return { matches, standings };
 };
 // It is for initial loading and we will be loading fixtures and page 0 at start.
-
 const getCompetitionDetails = async (sport, id, dateState, uniqueId) => {
   // All this uniqueId and id stuff just to load cricket data with tournament id and as matches needs uniquetournament,we pass it extra too.But with basketball,we fetch it with uniqueId which is simply under id.
   let standingSet;
-  // console.log(sport, id, uniqueId, dateState);
 
   const res = await fetch(
     `https://sofasport.p.rapidapi.com/v1/${
@@ -103,9 +100,7 @@ const getCompetitionDetails = async (sport, id, dateState, uniqueId) => {
     sportApiOptions
   );
   if (res.status === 404) {
-    const error = new Error("Can't fetch competition standings");
-    error.code = 404;
-    throw error;
+    handleError('competition standings');
   }
   const { data } = await res.json();
   const seasons = sport === 'basketball' ? data : data.seasons;
@@ -118,23 +113,17 @@ const getCompetitionDetails = async (sport, id, dateState, uniqueId) => {
     sportApiOptions
   );
   if (standingRes.status === 404) {
-    const error = new Error("Can't fetch competition standings");
-    error.code = 404;
-    throw error;
+    handleError('competition standings');
   }
   const { data: standingData } = await standingRes.json();
-  // console.log(standingData);
   const matchRes = await fetch(
     `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=0&seasons_id=${seasonId}&unique_tournament_id=${
       sport === 'cricket' ? uniqueId : id
     }`,
     sportApiOptions
   );
-  // console.log(await matchRes.json());
   if (matchRes.status === 404) {
-    const error = new Error("Can't fetch competition details");
-    error.code = 404;
-    throw error;
+    handleError('competition details');
   }
   const {
     data: { events, hasNextPage },
@@ -171,7 +160,6 @@ const getCompetitionMatches = async (
   page,
   uniqueId
 ) => {
-  // console.log(id, uniqueId);
   const matchRes = await fetch(
     `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${
       sport === 'cricket' ? uniqueId : id
@@ -179,9 +167,7 @@ const getCompetitionMatches = async (
     sportApiOptions
   );
   if (matchRes.status === 404) {
-    const error = new Error("Can't fetch matches");
-    error.code = 404;
-    throw error;
+    handleError('competition matches');
   }
   const {
     data: { events, hasNextPage },
@@ -199,7 +185,6 @@ const getCompetitionMatches = async (
   });
   return { matches, hasNextPage };
 };
-
 module.exports = {
   getFootballCompDetails,
   getCompetitionDetails,

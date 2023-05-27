@@ -1,13 +1,17 @@
+const { footballApiOptions, handleError } = require('../util/transform-data');
+const { getFootballStandings } = require('../util/competition-helper');
 const {
-  footballApiOptions,
-  getIncident,
-  getFootballStandings,
-  refinePlayerName,
-} = require('../util/transform-data');
+  refineStats,
+  refineLineups,
+  refineIncidents,
+} = require('../util/match-detail-helper');
 const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
   const url = `${BASE_URL}/info?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
+  if (res.status === 404) {
+    handleError('info');
+  }
   const {
     DATA: {
       VENUE_NAME: venue,
@@ -33,54 +37,18 @@ const getInfo = async (matchId) => {
 const getLineups = async (matchId) => {
   const url = `${BASE_URL}/lineups?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
+  if (res.status === 404) {
+    handleError('lineups');
+  }
   const {
     DATA: { LINEUPS: lineups, SUBSTITUTIONS: subs },
   } = await res.json();
-  const refinedLineups = lineups.map((el) => {
-    const {
-      TEAM_NUMBER: team,
-      PLAYERS: dirtyPlayerSet,
-      STANDING_FORMATIONS: formation,
-    } = el;
-    const playerSet = dirtyPlayerSet.reduce(
-      (acc, playerSet) => {
-        // console.log(acc);
-        const {
-          PLAYER_ID: playerId,
-          PLAYER_FIRST_NAME: playerFirstName,
-          PLAYER_LAST_NAME: playerLastName,
-          FORMAT_POSITION: formatPosition,
-          PLAYER_NUMBER: playerNumber,
-          PLAYER_POSITION_NAME: playerPos,
-        } = playerSet;
-        if (playerPos !== 'COACH') {
-          acc.players.push({
-            playerId,
-            // To remove undefined from the player that only has one name
-            playerName: playerFirstName
-              ? `${playerFirstName} ${playerLastName}`
-              : playerLastName,
-            formatPosition: formatPosition
-              ? formatPosition
-              : 'substitutePlayer',
-            playerNumber,
-          });
-          return acc;
-        }
-        if (playerPos === 'COACH') {
-          acc.coach = `${playerFirstName} ${playerLastName}`;
-          return acc;
-        }
-      },
-      { players: [], coach: '' }
-    );
-    const { players, coach } = playerSet;
-    return { team, formation, players, coach };
-  });
-  console.log(refinedLineups);
+  const refinedLineups = refineLineups(lineups);
+  if (!subs) {
+    return { lineups: refinedLineups };
+  }
   const flatSubs = Object.values(subs).flat();
   const subsContainer = [];
-  // console.log(flatSubs);
   for (i = 0; i < flatSubs.length; i++) {
     for (j = i + 1; j < flatSubs.length; j++) {
       if (flatSubs[i].OTHER_PLAYER_ID === flatSubs[j].PLAYER_ID) {
@@ -106,33 +74,12 @@ const getLineups = async (matchId) => {
   }
   return { lineups: refinedLineups, subs: subsContainer };
 };
-const refineStats = (slug) => {
-  const splittedSlug = slug.split('_');
-  const slugLength = splittedSlug.length;
-  let camelCaseStat, displayStat;
-  if (slugLength === 1) {
-    camelCaseStat = slug.toLowerCase();
-    displayStat = slug.slice(0, 1) + slug.slice(1).toLowerCase();
-  }
-  if (slugLength !== 1) {
-    const intermediateCamelSlug = splittedSlug
-      .map((el) => el.slice(0, 1) + el.slice(1).toLowerCase())
-      .join('');
-    camelCaseStat =
-      intermediateCamelSlug.slice(0, 1).toLowerCase() +
-      intermediateCamelSlug.slice(1);
-    const intermediateDisplaySlug = splittedSlug
-      .map((el) => el.toLowerCase())
-      .join(' ');
-    displayStat =
-      intermediateDisplaySlug.slice(0, 1).toUpperCase() +
-      intermediateDisplaySlug.slice(1);
-  }
-  return { camelCaseStat, displayStat };
-};
 const getStats = async (matchId) => {
   const url = `${BASE_URL}/statistics?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
+  if (res.status === 404) {
+    handleError('stats');
+  }
   const {
     DATA: { STATISTICS: statistics },
   } = await res.json();
@@ -177,23 +124,23 @@ const getStats = async (matchId) => {
       !(el === 'GOAL_KICKS') &&
       !(el === 'TEAM_NUMBER')
   );
-  console.log(statsList);
   const statsContainer = [];
   statsList.forEach((stat) => {
     const { camelCaseStat, displayStat } = refineStats(stat);
-    // console.log(camelCaseStat, displayStat);
     statsContainer.push({
       stat: displayStat,
       home: homeTeam[camelCaseStat],
       away: awayTeam[camelCaseStat],
     });
   });
-  // console.log(statsContainer);
   return statsContainer;
 };
 const getSummary = async (matchId) => {
   const url = `${BASE_URL}/incidents?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
+  if (res.status === 404) {
+    handleError(summary);
+  }
   const {
     DATA: {
       HOME_SCORE: homeScore,
@@ -207,43 +154,8 @@ const getSummary = async (matchId) => {
       INCIDENTS: dirtyIncidents,
     },
   } = await res.json();
-  const incidents = Object.values(dirtyIncidents).map((incidentSet) => {
-    // console.log(incidentSet);
-    const incident = incidentSet.map((el) => {
-      const {
-        MINUTE: minute,
-        NAME: team,
-        MINUTE_EXTENDED: minuteExtended,
-        PLAYER_NAME: playerName,
-        INCIDENT_TYPE: incidentType,
-        SCORE: score,
-        INCIDENTS: innerIncidents,
-      } = el;
-      const baseObj = { minute, team, minuteExtended };
-      if (!score) {
-        baseObj.playerName = refinePlayerName(playerName);
-        baseObj.incident = getIncident(incidentType);
-      }
-      if (score && incidentType) {
-        baseObj.playerName = refinePlayerName(playerName);
-        baseObj.incident = getIncident(incidentType);
-        baseObj.hasAssisted = false;
-        baseObj.score = score;
-      }
-      if (score && innerIncidents) {
-        const [{ PLAYER_NAME: scorer }, { PLAYER_NAME: assister }] =
-          innerIncidents;
-        baseObj.hasAssisted = true;
-        baseObj.scorer = refinePlayerName(scorer);
-        baseObj.assister = refinePlayerName(assister);
-        baseObj.incident = 'goal';
-        baseObj.score = score;
-      }
-      // console.log(baseObj);
-      return baseObj;
-    });
-    return incident;
-  });
+  const incidents = refineIncidents(dirtyIncidents);
+  console.log(incidents);
   const [firstHalfIncidents, secondHalfIncidents] = incidents;
   const baseObj = {
     homeFTScore,
@@ -253,15 +165,17 @@ const getSummary = async (matchId) => {
     firstHalfIncidents,
     secondHalfIncidents,
   };
-  if (incidents.length === 2) {
+  if (incidents.length <= 2) {
     return baseObj;
   }
+  // There is extra time and possibly penalty
   if (incidents.length === 4) {
     const [__, _, extraFirstHalfIncidents, extraSecondHalfIncidents] =
       incidents;
     const penaltyShootout = [];
     extraSecondHalfIncidents.forEach((incidentSet) => {
       const { incident, playerName, score, team } = incidentSet;
+      // Checking if pen shootout happened
       if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
         penaltyShootout.push({ incident, playerName, score, team });
       }
@@ -301,12 +215,9 @@ const getTable = async (compId) => {
     footballApiOptions
   );
   if (res.status === 404) {
-    const error = new Error("Can't fetch standings");
-    error.code = 404;
-    throw error;
+    handleError('standings');
   }
   const { DATA: standingData } = await res.json();
-  // console.log(res);
   let standings;
   if (standingData.length === 0) standings = [];
   if (standingData.length > 1) {
