@@ -4,7 +4,7 @@
 const { getMatches, getFootballMatches } = require('../controllers/getMatches');
 const {
   getFootballCompDetails,
-  getCompetitionDetails,
+  getCompetitionDetailHandler,
   getCompetitionMatches,
 } = require('../controllers/getCompDetails');
 const {
@@ -15,66 +15,61 @@ const {
   getTable,
 } = require('../controllers/getFootballMatchDetails');
 
-exports.getFootballMatches = ({ date, timeZoneDiff }) => {
-  return getFootballMatches(date, timeZoneDiff);
-};
-exports.getBasketballMatches = ({ date }) => {
-  return getMatches(date, 'basketball');
-};
-exports.getCricketMatches = ({ date }) => {
-  return getMatches(date, 'cricket');
-};
-exports.getLiveFootballMatches = async () => {
-  return getFootballMatches({}, null, true);
-};
-exports.getLiveBasketballMatches = async () => {
-  return getMatches({}, 'basketball', true);
-};
-exports.getLiveCricketMatches = async () => {
-  return getMatches({}, 'cricket', true);
+exports.getMatchesList = async ({
+  date,
+  timeZoneDiff,
+  sportName,
+  isLive,
+  isCricket,
+}) => {
+  if (sportName === 'football') {
+    if (!isLive) {
+      return getFootballMatches(date, timeZoneDiff);
+    } else {
+      return getFootballMatches('_', '_', true);
+    }
+  }
+  if (sportName !== 'football') {
+    if (isLive) {
+      return getMatches('_', sportName, true);
+    } else {
+      return getMatches(date, sportName);
+    }
+  }
 };
 exports.getFootballDetails = ({ compId }) => {
   return getFootballCompDetails(compId);
 };
 // TODO:handle the case where there is no  standings.
-exports.getBasketballDetails = async ({ uniqueId, dateState = 'next' }) => {
-  return getCompetitionDetails('basketball', uniqueId, dateState);
-};
-exports.getCricketDetails = async ({
+exports.getCompetitionDetails = async ({
   compId,
-  dateState = 'next',
   uniqueId,
+  dateState,
+  isCricket,
 }) => {
-  return getCompetitionDetails('cricket', compId, dateState, uniqueId);
+  console.log(compId, uniqueId, dateState, isCricket);
+  if (isCricket) {
+    return getCompetitionDetailHandler('cricket', compId, dateState, uniqueId);
+  }
+  if (!isCricket) {
+    return getCompetitionDetailHandler('basketball', '_', dateState, uniqueId);
+  }
 };
-exports.getBasketballCompMatches = async ({
+
+exports.getCompMatches = async ({
+  compId,
   uniqueId,
   appSeasonId,
-  dateState = 'next',
+  dateState,
   page = 0,
+  isCricket,
 }) => {
   return getCompetitionMatches(
-    'basketball',
+    isCricket ? 'cricket' : 'basketball',
     uniqueId,
     appSeasonId,
     dateState,
     page
-  );
-};
-exports.getCricketCompMatches = async ({
-  compId,
-  uniqueId,
-  appSeasonId,
-  dateState = 'next',
-  page = 0,
-}) => {
-  return getCompetitionMatches(
-    'cricket',
-    compId,
-    appSeasonId,
-    dateState,
-    page,
-    uniqueId
   );
 };
 exports.getFootballMatchInfo = async ({ matchId }) => {

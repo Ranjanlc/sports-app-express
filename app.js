@@ -5,6 +5,7 @@ const graphqlResolver = require('./graphql/resolvers');
 const app = express();
 
 app.use((req, res, next) => {
+  console.log('backend hit??');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
@@ -28,6 +29,7 @@ app.use(
       const message = err.message || ' An Error occured';
       const code = err.originalError.code || 500;
       // WE can name these field in the way we want
+      console.log({ message, code, data });
       return { message, status: code, data };
     },
   })

@@ -119,8 +119,10 @@ const refineLineups = (lineups) => {
     } = el;
     const playerSet = dirtyPlayerSet.reduce(
       (acc, playerSet) => {
+        console.log(playerSet);
         const {
           PLAYER_ID: playerId,
+          EXTERNAL_ID: externalId,
           PLAYER_FIRST_NAME: playerFirstName,
           PLAYER_LAST_NAME: playerLastName,
           FORMAT_POSITION: formatPosition,
@@ -129,7 +131,7 @@ const refineLineups = (lineups) => {
         } = playerSet;
         if (playerPos !== 'COACH') {
           acc.players.push({
-            playerId,
+            playerId: playerId ? playerId : externalId,
             // To remove undefined from the player that only has one name
             playerName: playerFirstName
               ? refinePlayerNameLineup(`${playerFirstName} ${playerLastName}`)

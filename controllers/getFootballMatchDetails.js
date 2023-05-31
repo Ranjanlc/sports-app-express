@@ -16,7 +16,7 @@ const getInfo = async (matchId) => {
     DATA: {
       VENUE_NAME: venue,
       SPECTATORS_NUMBER: spectators,
-      REFS: [{ NAME: refName, REFEREE_COUNTRY_NAME: refCountry }],
+      REFS,
       MATCH_START_DATE: matchStartDate,
     },
   } = await res.json();
@@ -32,6 +32,10 @@ const getInfo = async (matchId) => {
     month: 'short',
     day: '2-digit',
   });
+  if (!REFS) {
+    return { venue, spectators, startDate };
+  }
+  const [{ NAME: refName, REFEREE_COUNTRY_NAME: refCountry }] = REFS;
   return { venue, spectators, refName, refCountry, startDate };
 };
 const getLineups = async (matchId) => {
@@ -56,10 +60,11 @@ const getLineups = async (matchId) => {
           MINUTE: minute,
           NAME: team,
           PLAYER_NAME: subOutPlayerName,
-          PLAYER_ID: subOutPlayerId,
+          ID: subOutPlayerId,
           OTHER_PLAYER_ID: subInPlayerId,
           MINUTE_EXTENDED: minuteExtended,
         } = flatSubs[i];
+        console.log(flatSubs[i]);
         subsContainer.push({
           minute,
           team,

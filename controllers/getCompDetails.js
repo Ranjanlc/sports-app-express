@@ -87,41 +87,48 @@ const getFootballCompDetails = async (compId) => {
   return { matches, standings };
 };
 // It is for initial loading and we will be loading fixtures and page 0 at start.
-const getCompetitionDetails = async (sport, id, dateState, uniqueId) => {
+const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
   // All this uniqueId and id stuff just to load cricket data with tournament id and as matches needs uniquetournament,we pass it extra too.But with basketball,we fetch it with uniqueId which is simply under id.
+  console.log(id, uniqueId);
   let standingSet;
-
+  console.log(
+    `https://sofasport.p.rapidapi.com/v1/${
+      sport === 'cricket' ? 'tournaments' : 'unique-tournaments'
+    }/seasons?${
+      sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
+    }=${sport === 'cricket' ? id : uniqueId}`
+  );
   const res = await fetch(
     `https://sofasport.p.rapidapi.com/v1/${
       sport === 'cricket' ? 'tournaments' : 'unique-tournaments'
     }/seasons?${
       sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
-    }=${id}`,
+    }=${sport === 'cricket' ? id : uniqueId}`,
     sportApiOptions
   );
   if (res.status === 404) {
-    handleError('competition standings');
+    handleError('competition matches');
   }
   const { data } = await res.json();
   const seasons = sport === 'basketball' ? data : data.seasons;
   const seasonId = seasons.at(0).id;
-
+  // console.log(seasonId);
   const standingRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&${
-      sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
-    }=${id}`,
+    `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
+  // console.log(standingRes);
   if (standingRes.status === 404) {
     handleError('competition standings');
   }
   const { data: standingData } = await standingRes.json();
+  console.log(standingData);
+  // To be fixed
   const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=0&seasons_id=${seasonId}&unique_tournament_id=${
-      sport === 'cricket' ? uniqueId : id
-    }`,
+    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=last&page=0&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
+  // console.log(matchRes);
   if (matchRes.status === 404) {
     handleError('competition details');
   }
@@ -154,16 +161,13 @@ const getCompetitionDetails = async (sport, id, dateState, uniqueId) => {
 };
 const getCompetitionMatches = async (
   sport,
-  id,
+  uniqueId,
   appSeasonId,
   dateState,
-  page,
-  uniqueId
+  page
 ) => {
   const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${
-      sport === 'cricket' ? uniqueId : id
-    }`,
+    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
   if (matchRes.status === 404) {
@@ -187,6 +191,6 @@ const getCompetitionMatches = async (
 };
 module.exports = {
   getFootballCompDetails,
-  getCompetitionDetails,
+  getCompetitionDetailHandler,
   getCompetitionMatches,
 };

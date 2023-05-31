@@ -46,7 +46,7 @@ type FootballStanding {
     GD:Int! 
     points:Int! 
 }
-type BasketballStanding {
+type CompetitionStanding{
     name:String!
     teamId:ID!
     teamImageUrl:String! 
@@ -54,26 +54,12 @@ type BasketballStanding {
     wins:Int! 
     losses:Int! 
     played:Int! 
-    percentage:Float!
+    percentage:Float
     points:Int 
+    netRunRate:Float
 }
-type CricketStanding{
-    name:String! 
-    teamId:ID! 
-    teamImageUrl:String! 
-    position:Int! 
-    wins:Int! 
-    losses:Int 
-    played:Int! 
-    points:Int! 
-    netRunRate:Float! 
-}
-type CricketStandingSet{
-    standings:[CricketStanding]
-    groupName:String
-}
-type BasketballStandingSet {
-    standings:[BasketballStanding]
+type CompetitionStandingSet{
+    standings:[CompetitionStanding]
     groupName:String
 }
 type FootballMatches{
@@ -114,25 +100,20 @@ type Incident {
 }
 type MatchContainer{
     matches:[MatchList!]
-    featuredMatch:FeaturedMatch!,
+    featuredMatch:FeaturedMatch,
 }
 type FootballDetail {
     matches:FootballMatches!
     standings:[FootballStanding]
 }
-type BasketballDetail{
-    matchSet:CompetitionMatches
-    seasonId:ID! 
-    standingSet:[BasketballStandingSet]
-}
-type CricketDetail{
-    matchSet:CompetitionMatches
-    seasonId:ID!
-    standingSet:[CricketStandingSet]
-}
 type CompetitionMatches{
     matches:[Event!]!
     hasNextPage:Boolean!
+}
+type CompetitionDetail{
+    matchSet:CompetitionMatches
+    seasonId:ID! 
+    standingSet:[CompetitionStandingSet]
 }
 type FootballLineup{
     lineups:[Lineup!]!,
@@ -141,8 +122,8 @@ type FootballLineup{
 type FootballInfo{
     venue:String!,
     spectators:Int,
-    refName:String!,
-    refCountry:String!,
+    refName:String,
+    refCountry:String,
     startDate:String!
 }
 type FootballStats{
@@ -170,22 +151,15 @@ type RootMutation{
 }
 
 type RootQuery {
-    getFootballMatches(date:String!,timeZoneDiff:String!):MatchContainer!
-    getBasketballMatches(date:String!):MatchContainer!
-    getCricketMatches(date:String!):MatchContainer!
-    getLiveFootballMatches:MatchContainer!
-    getLiveBasketballMatches:MatchContainer
-    getLiveCricketMatches:MatchContainer
+    getMatchesList(date:String!,timeZoneDiff:String,sportName:String!,isLive:Boolean!,isCricket:Boolean!):MatchContainer
     getFootballDetails(compId:Int!):FootballDetail!
-    getBasketballDetails(uniqueId:Int!,dateState:String!):BasketballDetail!
-    getCricketDetails(compId:Int!,dateState:String!,uniqueId:Int!):CricketDetail!
-    getBasketballCompMatches(uniqueId:Int!,appSeasonId:ID!,dateState:String!,page:Int):CompetitionMatches!
-    getCricketCompMatches(compId:Int!,uniqueId:Int!,appSeasonId:ID!,dateState:String!,page:Int):CompetitionMatches!
-    getFootballMatchLineup(matchId:Int!):FootballLineup!
-    getFootballMatchInfo(matchId:Int!):FootballInfo!
-    getFootballMatchStats(matchId:Int!):[FootballStats!]!
-    getFootballMatchSummary(matchId:Int!):FootballSummary!
-    getFootballMatchTable(compId:Int!):[FootballStanding!]!
+    getCompetitionDetails(compId:ID,uniqueId:ID!,dateState:String!,isCricket:Boolean!):CompetitionDetail!
+    getCompMatches(uniqueId:ID!,appSeasonId:ID!,dateState:String!,page:Int,isCricket:Boolean!):CompetitionMatches!
+    getFootballMatchLineup(matchId:ID!):FootballLineup!
+    getFootballMatchInfo(matchId:ID!):FootballInfo!
+    getFootballMatchStats(matchId:ID!):[FootballStats!]!
+    getFootballMatchSummary(matchId:ID!):FootballSummary!
+    getFootballMatchTable(compId:ID!):[FootballStanding!]!
 }
 schema {
     query:RootQuery
