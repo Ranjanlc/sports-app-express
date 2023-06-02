@@ -1,4 +1,4 @@
-const API_KEY = '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede';
+const API_KEY = 'ddbb836b25msh719c2bf06f1875ap155ea1jsn3637ab971479';
 const footballApiOptions = {
   headers: {
     'X-RapidAPI-Key': API_KEY,
@@ -180,9 +180,9 @@ const refineInnings = (homeScore, awayScore) => {
   }
   return { displayHomeScore, displayAwayScore };
 };
-const handleError = (name) => {
+const handleError = (name, code) => {
   const error = new Error(`Can't fetch ${name}`);
-  error.code = 404;
+  error.code = code || 404;
   throw error;
 };
 module.exports = {

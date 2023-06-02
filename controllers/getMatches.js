@@ -16,8 +16,8 @@ const getMatches = async (date, sport, live = false) => {
     }sport_id=${sport === 'basketball' ? '2' : '62'}`,
     sportApiOptions
   );
-  if (res.status === 404) {
-    handleError('cricket/basketball matches');
+  if (res.status === 404 || res.status === 429) {
+    handleError(`${sport} matches`);
   }
   const { data } = await res.json();
   if (data?.length === 0) {
@@ -161,7 +161,8 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
     live ? 'live?' : `list?date=${date}&`
   }locale=EN&${live ? 'timezone=0' : `timezone=${timeZoneHour}`}&sport=soccer`;
   const res = await fetch(URL, footballApiOptions);
-  if (res.status === 404) {
+  console.log(res);
+  if (res.status === 404 || res.status === 429) {
     handleError('football matches');
   }
   const { DATA: data } = await res.json();

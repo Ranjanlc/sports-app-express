@@ -9,7 +9,7 @@ const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
   const url = `${BASE_URL}/info?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError('info');
   }
   const {
@@ -41,7 +41,7 @@ const getInfo = async (matchId) => {
 const getLineups = async (matchId) => {
   const url = `${BASE_URL}/lineups?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError('lineups');
   }
   const {
@@ -82,7 +82,7 @@ const getLineups = async (matchId) => {
 const getStats = async (matchId) => {
   const url = `${BASE_URL}/statistics?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError('stats');
   }
   const {
@@ -143,7 +143,7 @@ const getStats = async (matchId) => {
 const getSummary = async (matchId) => {
   const url = `${BASE_URL}/incidents?sport=soccer&event_id=${matchId}&locale=EN`;
   const res = await fetch(url, footballApiOptions);
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError(summary);
   }
   const {
@@ -219,7 +219,7 @@ const getTable = async (compId) => {
     `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=${compId}&locale=EN`,
     footballApiOptions
   );
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError('standings');
   }
   const { DATA: standingData } = await res.json();

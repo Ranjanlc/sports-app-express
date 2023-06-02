@@ -20,7 +20,7 @@ const getFootballCompDetails = async (compId) => {
     getFootballURL(compId, 'standings'),
     footballApiOptions
   );
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 429) {
     handleError('competition details');
   }
   if (res1.status === 404) {
@@ -89,15 +89,10 @@ const getFootballCompDetails = async (compId) => {
 // It is for initial loading and we will be loading fixtures and page 0 at start.
 const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
   // All this uniqueId and id stuff just to load cricket data with tournament id and as matches needs uniquetournament,we pass it extra too.But with basketball,we fetch it with uniqueId which is simply under id.
-  console.log(id, uniqueId);
+  const errors = [];
   let standingSet;
-  console.log(
-    `https://sofasport.p.rapidapi.com/v1/${
-      sport === 'cricket' ? 'tournaments' : 'unique-tournaments'
-    }/seasons?${
-      sport === 'cricket' ? 'tournament_id' : 'unique_tournament_id'
-    }=${sport === 'cricket' ? id : uniqueId}`
-  );
+  const matches = [];
+  let hasNextPage = false;
   const res = await fetch(
     `https://sofasport.p.rapidapi.com/v1/${
       sport === 'cricket' ? 'tournaments' : 'unique-tournaments'
@@ -106,8 +101,8 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
     }=${sport === 'cricket' ? id : uniqueId}`,
     sportApiOptions
   );
-  if (res.status === 404) {
-    handleError('competition matches');
+  if (res.status === 404 || res.status === 429) {
+    handleError('Sorry,internal server error', 500);
   }
   const { data } = await res.json();
   const seasons = sport === 'basketball' ? data : data.seasons;
@@ -117,47 +112,60 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
     `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
-  // console.log(standingRes);
-  if (standingRes.status === 404) {
-    handleError('competition standings');
+  if (standingRes.status === 404 || standingRes.status === 429) {
+    errors.push('standings');
   }
-  const { data: standingData } = await standingRes.json();
-  console.log(standingData);
-  // To be fixed
   const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=last&page=0&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
+    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=0&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
-  // console.log(matchRes);
-  if (matchRes.status === 404) {
+  if (matchRes.status === 404 || matchRes.status === 429) {
+    errors.push('matches');
+  }
+  if (errors.length > 1) {
+    // If both  failed to fetch
     handleError('competition details');
   }
-  const {
-    data: { events, hasNextPage },
-  } = await matchRes.json();
-  const matches = [];
-  events.forEach((boilerData) => {
-    const event = refineEvents(boilerData, sport, dateState);
-    if (dateState === 'last') {
-      matches.unshift(event);
+  const { data: standingData } = await standingRes.json();
+  const { data: matchData } = await matchRes.json();
+  if (standingData) {
+    if (standingData.length === 1) {
+      standingSet = { standings: refineStandings(standingData[0], sport) };
     }
-    if (dateState === 'next') {
-      // TODO:If running matches are on this set,do necessary things to fine-tune it.
-      matches.push(event);
+    if (standingData.length >= 1) {
+      standingSet = standingData.map((compData) => {
+        return {
+          groupName: compData.name,
+          standings: refineStandings(compData, sport),
+        };
+      });
     }
-  });
-  if (standingData?.length === 1) {
-    standingSet = { standings: refineStandings(standingData[0], sport) };
   }
-  if (standingData?.length >= 1) {
-    standingSet = standingData.map((compData) => {
-      return {
-        groupName: compData.name,
-        standings: refineStandings(compData, sport),
-      };
+  if (matchData) {
+    // console.log(matchData);
+    const { events, hasNextPage: matchHasNextPage } = matchData;
+    // Setting the variables value;
+    hasNextPage = matchHasNextPage;
+    events.forEach((boilerData) => {
+      const event = refineEvents(boilerData, sport, dateState);
+      if (dateState === 'last') {
+        matches.unshift(event);
+      }
+      if (dateState === 'next') {
+        // TODO:If running matches are on this set,do necessary things to fine-tune it.
+        matches.push(event);
+      }
     });
   }
-  return { matchSet: { matches, hasNextPage }, seasonId, standingSet };
+  if (standingData && matchData) {
+    return { matchSet: { matches, hasNextPage }, seasonId, standingSet };
+  }
+  if (standingData && !matchData) {
+    return { seasonId, standingSet };
+  }
+  if (matchData && !standingData) {
+    return { matchSet: { matches, hasNextPage }, seasonId };
+  }
 };
 const getCompetitionMatches = async (
   sport,
@@ -170,7 +178,7 @@ const getCompetitionMatches = async (
     `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
   );
-  if (matchRes.status === 404) {
+  if (matchRes.status === 404 || matchRes.status === 429) {
     handleError('competition matches');
   }
   const {
@@ -183,7 +191,7 @@ const getCompetitionMatches = async (
       matches.unshift(event);
     }
     if (dateState === 'next') {
-      // TODO:If running matches are on this set,do necessary things to fine-tune it.
+      // TODO:If running matches are on this set,do necessary things to fine-tune it
       matches.push(event);
     }
   });

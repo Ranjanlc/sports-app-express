@@ -5,7 +5,6 @@ const graphqlResolver = require('./graphql/resolvers');
 const app = express();
 
 app.use((req, res, next) => {
-  console.log('backend hit??');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
@@ -35,7 +34,7 @@ app.use(
   })
 );
 app.use((error, req, res, next) => {
-  console.log(error);
+  console.log(error, 'yo ho ra?');
   const status = error.statusCode || 500;
   const message = error.message;
   const data = error.data;
