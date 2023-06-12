@@ -161,6 +161,7 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
     live ? 'live?' : `list?date=${date}&`
   }locale=EN&${live ? 'timezone=0' : `timezone=${timeZoneHour}`}&sport=soccer`;
   const res = await fetch(URL, footballApiOptions);
+  // console.log(res);
   if (res.status === 404 || res.status === 429) {
     handleError('football matches');
   }
@@ -251,6 +252,7 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
   if (live) {
     return { matches: refinedSet };
   }
+  // console.log(refinedSet, featuredMatch);
   return { matches: refinedSet, featuredMatch };
 };
 module.exports = { getMatches, getFootballMatches };

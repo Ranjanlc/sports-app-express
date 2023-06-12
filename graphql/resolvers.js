@@ -15,7 +15,9 @@ const {
   getTable,
 } = require('../controllers/getFootballMatchDetails');
 
-exports.getMatchesList = async ({ date, timeZoneDiff, sportName, isLive }) => {
+exports.getMatchesList = async (_, __, context) => {
+  console.log(context.variables);
+  const { date, timeZoneDiff, sportName, isLive } = context.variables;
   console.log(date, timeZoneDiff, sportName, isLive);
   if (sportName === 'football') {
     if (!isLive) {
