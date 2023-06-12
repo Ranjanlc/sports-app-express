@@ -1,4 +1,3 @@
-const API_KEY = 'ddbb836b25msh719c2bf06f1875ap155ea1jsn3637ab971479';
 const footballApiOptions = {
   headers: {
     'X-RapidAPI-Key': API_KEY,
