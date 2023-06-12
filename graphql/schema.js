@@ -151,7 +151,7 @@ type RootMutation{
 }
 
 type RootQuery {
-    getMatchesList(date:String!,timeZoneDiff:String,sportName:String!,isLive:Boolean!,isCricket:Boolean!):MatchContainer
+    getMatchesList(date:String,timeZoneDiff:String,sportName:String!,isLive:Boolean!,isCricket:Boolean!):MatchContainer
     getFootballDetails(compId:Int!):FootballDetail!
     getCompetitionDetails(compId:ID,uniqueId:ID!,dateState:String!,isCricket:Boolean!):CompetitionDetail!
     getCompMatches(uniqueId:ID!,appSeasonId:ID!,dateState:String!,page:Int,isCricket:Boolean!):CompetitionMatches!

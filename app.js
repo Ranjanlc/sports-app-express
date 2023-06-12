@@ -28,13 +28,11 @@ app.use(
       const message = err.message || ' An Error occured';
       const code = err.originalError.code || 500;
       // WE can name these field in the way we want
-      console.log({ message, code, data });
       return { message, status: code, data };
     },
   })
 );
 app.use((error, req, res, next) => {
-  console.log(error, 'yo ho ra?');
   const status = error.statusCode || 500;
   const message = error.message;
   const data = error.data;
