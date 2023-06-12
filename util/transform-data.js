@@ -188,7 +188,6 @@ module.exports = {
   getMatchDate,
   checkWickets,
   refineInnings,
-  API_KEY,
   footballApiOptions,
   sportApiOptions,
   refineFootballDate,
