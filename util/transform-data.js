@@ -6,7 +6,7 @@ const footballApiOptions = {
 };
 const sportApiOptions = {
   headers: {
-    'X-RapidAPI-Key': API_KEY,
+    'X-RapidAPI-Key': process.env.API_KEY,
     'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
   },
 };
