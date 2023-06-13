@@ -5,11 +5,7 @@ const graphqlResolver = require('./graphql/resolvers');
 const app = express();
 
 app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
   const allowedOrigin = 'https://ballscore.vercel.app';
-  console.log(req.headers.origin, req.headers.host);
   // Check if the request origin matches the allowed origin
   if (req.headers.origin === allowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
@@ -21,6 +17,9 @@ app.use((req, res, next) => {
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization'
     );
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
     next();
   } else {
     return res.status(403).send('FORBIDDEN REQUEST BRO');
