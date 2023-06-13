@@ -9,7 +9,7 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   const allowedOrigin = 'https://ballscore.vercel.app';
-
+  console.log(req.headers.origin, req.headers.host);
   // Check if the request origin matches the allowed origin
   if (req.headers.origin === allowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
