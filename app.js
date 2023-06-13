@@ -5,15 +5,15 @@ const graphqlResolver = require('./graphql/resolvers');
 const app = express();
 
 app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   if (req.headers.host !== 'ballscore.vercel.app') {
     return res.status(403).send('FORBIDDEN REQUEST BRO');
   }
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
   next();
 });
 
