@@ -20,7 +20,7 @@ const getFootballCompDetails = async (compId) => {
     getFootballURL(compId, 'standings'),
     footballApiOptions
   );
-  if (res.status === 404 || res.status === 429) {
+  if (res.status === 404 || res.status === 429 || res.status === 403) {
     handleError('competition details');
   }
   if (res1.status === 404) {
@@ -101,13 +101,12 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
     }=${sport === 'cricket' ? id : uniqueId}`,
     sportApiOptions
   );
-  if (res.status === 404 || res.status === 429) {
+  if (res.status === 404 || res.status === 429 || res.status === 403) {
     handleError('Sorry,internal server error', 500);
   }
   const { data } = await res.json();
   const seasons = sport === 'basketball' ? data : data.seasons;
   const seasonId = seasons.at(0).id;
-  // console.log(seasonId);
   const standingRes = await fetch(
     `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
@@ -142,7 +141,6 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
     }
   }
   if (matchData) {
-    // console.log(matchData);
     const { events, hasNextPage: matchHasNextPage } = matchData;
     // Setting the variables value;
     hasNextPage = matchHasNextPage;

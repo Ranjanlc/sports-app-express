@@ -101,13 +101,10 @@ const refineIncidents = (dirtyIncidents) => {
         baseObj.incident = getIncident(incidentType);
         baseObj.score = score;
       }
-      // console.log(baseObj);
       return baseObj;
     });
-    // console.log(incident);
     return incident;
   });
-  // console.log(refinedIncident);
   return refinedIncident;
 };
 const refineLineups = (lineups) => {
@@ -119,7 +116,6 @@ const refineLineups = (lineups) => {
     } = el;
     const playerSet = dirtyPlayerSet.reduce(
       (acc, playerSet) => {
-        console.log(playerSet);
         const {
           PLAYER_ID: playerId,
           EXTERNAL_ID: externalId,

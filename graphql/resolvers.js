@@ -14,11 +14,10 @@ const {
   getSummary,
   getTable,
 } = require('../controllers/getFootballMatchDetails');
-
-exports.getMatchesList = async (_, __, context) => {
-  console.log(context.variables);
-  const { date, timeZoneDiff, sportName, isLive } = context.variables;
-  console.log(date, timeZoneDiff, sportName, isLive);
+// The first and second arguments are parent and args out of which parent represents the result of the previous resolver execution in the resolver chain. For the root resolver, this value is usually undefined or null. ANDDDD, args contains the input arguments directly passed to the graphql query(without using variables)
+// The third argument is context which is called everytime the req is sent and it also consits of variables we passed into query. AN Important thing is the variables name is not the argument name. FOr ex: compId:$competitionId is in the query, we cant do variables.compId,we should do variables.competitionId.
+exports.getMatchesList = async (_, __, { variables }) => {
+  const { date, timeZoneDiff, sportName, isLive } = variables;
   if (sportName === 'football') {
     if (!isLive) {
       return getFootballMatches(date, timeZoneDiff);
@@ -34,16 +33,12 @@ exports.getMatchesList = async (_, __, context) => {
     }
   }
 };
-exports.getFootballDetails = ({ compId }) => {
-  return getFootballCompDetails(compId);
+exports.getFootballDetails = (_, __, { variables }) => {
+  return getFootballCompDetails(variables.compId);
 };
 // TODO:handle the case where there is no  standings.
-exports.getCompetitionDetails = async ({
-  compId,
-  uniqueId,
-  dateState,
-  isCricket,
-}) => {
+exports.getCompetitionDetails = async (_, __, { variables }) => {
+  const { compId, uniqueId, dateState, isCricket } = variables;
   if (isCricket) {
     return getCompetitionDetailHandler('cricket', compId, dateState, uniqueId);
   }
@@ -52,14 +47,15 @@ exports.getCompetitionDetails = async ({
   }
 };
 
-exports.getCompMatches = async ({
-  compId,
-  uniqueId,
-  appSeasonId,
-  dateState,
-  page = 0,
-  isCricket,
-}) => {
+exports.getCompMatches = async (_, __, { variables }) => {
+  const {
+    compId,
+    uniqueId,
+    appSeasonId,
+    dateState,
+    page = 0,
+    isCricket,
+  } = variables;
   return getCompetitionMatches(
     isCricket ? 'cricket' : 'basketball',
     uniqueId,
@@ -68,18 +64,18 @@ exports.getCompMatches = async ({
     page
   );
 };
-exports.getFootballMatchInfo = async ({ matchId }) => {
-  return getInfo(matchId);
+exports.getFootballMatchInfo = async (_, __, { variables }) => {
+  return getInfo(variables.matchId);
 };
-exports.getFootballMatchLineup = async ({ matchId }) => {
-  return getLineups(matchId);
+exports.getFootballMatchLineup = async (_, __, { variables }) => {
+  return getLineups(variables.matchId);
 };
-exports.getFootballMatchStats = async ({ matchId }) => {
-  return getStats(matchId);
+exports.getFootballMatchStats = async (_, __, { variables }) => {
+  return getStats(variables.matchId);
 };
-exports.getFootballMatchSummary = async ({ matchId }) => {
-  return getSummary(matchId);
+exports.getFootballMatchSummary = async (_, __, { variables }) => {
+  return getSummary(variables.matchId);
 };
-exports.getFootballMatchTable = async ({ compId }) => {
-  return getTable(compId);
+exports.getFootballMatchTable = async (_, __, { variables }) => {
+  return getTable(variables.compId);
 };

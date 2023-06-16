@@ -16,7 +16,7 @@ const getMatches = async (date, sport, live = false) => {
     }sport_id=${sport === 'basketball' ? '2' : '62'}`,
     sportApiOptions
   );
-  if (res.status === 404 || res.status === 429) {
+  if (res.status === 404 || res.status === 429 || res.status === 403) {
     handleError(`${sport} matches`);
   }
   const { data } = await res.json();
@@ -161,8 +161,12 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
     live ? 'live?' : `list?date=${date}&`
   }locale=EN&${live ? 'timezone=0' : `timezone=${timeZoneHour}`}&sport=soccer`;
   const res = await fetch(URL, footballApiOptions);
-  // console.log(res);
-  if (res.status === 404 || res.status === 429) {
+  if (
+    res.status === 404 ||
+    res.status === 429 ||
+    res.status === 403 ||
+    res.status === 403
+  ) {
     handleError('football matches');
   }
   const { DATA: data } = await res.json();
@@ -252,7 +256,6 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
   if (live) {
     return { matches: refinedSet };
   }
-  // console.log(refinedSet, featuredMatch);
   return { matches: refinedSet, featuredMatch };
 };
 module.exports = { getMatches, getFootballMatches };

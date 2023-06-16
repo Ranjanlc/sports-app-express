@@ -1,3 +1,5 @@
+const { GraphQLError } = require('graphql');
+
 const API_KEY = '794957fdf3mshfe3851c32292bfep148998jsn6ebf45565629';
 const footballApiOptions = {
   headers: {
@@ -181,7 +183,7 @@ const refineInnings = (homeScore, awayScore) => {
   return { displayHomeScore, displayAwayScore };
 };
 const handleError = (name, code) => {
-  const error = new Error(`Can't fetch ${name}`);
+  const error = new GraphQLError(`Can't fetch ${name}`);
   error.code = code || 404;
   throw error;
 };
