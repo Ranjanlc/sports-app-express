@@ -118,7 +118,7 @@ module.exports = `type Team {
     subs: [Sub]
   }
   type FootballInfo {
-    venue: String!
+    venue: String
     spectators: Int
     refName: String
     refCountry: String
@@ -138,7 +138,7 @@ module.exports = `type Team {
     awayScore: Int
     homeShootoutScore: Int
     awayShootoutScore: Int
-    firstHalfIncidents: [Incident!]!
+    firstHalfIncidents: [Incident!]
     secondHalfIncidents: [Incident!]
     extraTimeIncidents: [Incident]
     penaltyShootout: [Incident]

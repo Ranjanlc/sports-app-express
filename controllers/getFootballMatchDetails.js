@@ -4,6 +4,7 @@ const {
   refineStats,
   refineLineups,
   refineIncidents,
+  handleShootout,
 } = require('../util/match-detail-helper');
 const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
@@ -159,8 +160,11 @@ const getSummary = async (matchId) => {
       INCIDENTS: dirtyIncidents,
     },
   } = await res.json();
-  const incidents = refineIncidents(dirtyIncidents);
-  const [firstHalfIncidents, secondHalfIncidents] = incidents;
+  const firstHalfIncidents = refineIncidents(dirtyIncidents[1]);
+  const secondHalfIncidents = refineIncidents(dirtyIncidents[2]);
+  const extraFirstHalfIncidents = refineIncidents(dirtyIncidents[3]);
+  const extraSecondHalfIncidents = refineIncidents(dirtyIncidents[4]);
+  const shootoutHappened = homeShootoutScore ?? awayShootoutScore;
   const baseObj = {
     homeFTScore,
     awayFTScore,
@@ -169,45 +173,28 @@ const getSummary = async (matchId) => {
     firstHalfIncidents,
     secondHalfIncidents,
   };
-  if (incidents.length <= 2) {
-    return baseObj;
+  if (!shootoutHappened) {
+    const extraTimeIncidents = [
+      extraFirstHalfIncidents,
+      extraSecondHalfIncidents,
+    ]
+      .flat()
+      .filter(Boolean); //Boolean to filter undefined if any of the extraTimeIncidents would go missing.
+    return { ...baseObj, extraTimeIncidents };
   }
-  // There is extra time and possibly penalty
-  if (incidents.length === 4) {
-    const [__, _, extraFirstHalfIncidents, extraSecondHalfIncidents] =
-      incidents;
-    const penaltyShootout = [];
-    extraSecondHalfIncidents.forEach((incidentSet) => {
-      const { incident, playerName, score, team } = incidentSet;
-      // Checking if pen shootout happened
-      if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
-        penaltyShootout.push({ incident, playerName, score, team });
-      }
-    });
-    if (penaltyShootout.length !== 0) {
-      return {
-        ...baseObj,
-        extraTimeIncidents: [
-          extraFirstHalfIncidents,
-          extraSecondHalfIncidents.filter(
-            (incidentSet) =>
-              !(incidentSet.incident === 'shootOutPen') &&
-              !(incidentSet.incident === 'shootOutMiss')
-          ),
-        ].flat(),
-        penaltyShootout,
-        homeScore,
-        awayScore,
-        homeShootoutScore,
-        awayShootoutScore,
-      };
-    }
+  if (shootoutHappened) {
+    const { refinedExtraIncidents, penaltyShootout } = handleShootout(
+      extraSecondHalfIncidents
+    );
+    const extraTimeIncidents = [extraFirstHalfIncidents, refinedExtraIncidents]
+      .flat()
+      .filter(Boolean);
     return {
       ...baseObj,
-      extraTimeIncidents: [
-        extraFirstHalfIncidents,
-        extraSecondHalfIncidents,
-      ].flat(),
+      extraTimeIncidents,
+      penaltyShootout,
+      homeShootoutScore,
+      awayShootoutScore,
       homeScore,
       awayScore,
     };
