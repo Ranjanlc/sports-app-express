@@ -169,56 +169,25 @@ const handleShootout = (incidents) => {
     penaltyShootout,
   };
 };
-const handleExtraTime1 = (incidents, halfPeriods) => {
-  const isFirstHalf = halfPeriods.some((el) => el === '1');
-  if (incidents.length === 3) {
-    const [
-      fullTimeIncident,
-      extraFirstHalfIncidents,
-      extraSecondHalfIncidents,
-    ] = incidents;
-    if (isFirstHalf) {
-      return {};
-    }
-    if (!isFirstHalf) {
-    }
-    // const [regularIncident]
-  }
-  const [__, _, extraFirstHalfIncidents, extraSecondHalfIncidents] = incidents;
-  const penaltyShootout = [];
-  extraSecondHalfIncidents.forEach((incidentSet) => {
-    const { incident, playerName, score, team } = incidentSet;
-    // Checking if pen shootout happened
-    if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
-      penaltyShootout.push({ incident, playerName, score, team });
-    }
-  });
-  if (penaltyShootout.length !== 0) {
-    return {
-      ...baseObj,
-      extraTimeIncidents: [
-        extraFirstHalfIncidents,
-        extraSecondHalfIncidents.filter(
-          (incidentSet) =>
-            !(incidentSet.incident === 'shootOutPen') &&
-            !(incidentSet.incident === 'shootOutMiss')
-        ),
-      ].flat(),
-      penaltyShootout,
-      homeScore,
-      awayScore,
-      homeShootoutScore,
-      awayShootoutScore,
-    };
-  }
+const refineBasketballLineups = (playerSet) => {
+  const {
+    player: { id, name },
+    substitute: isSub,
+    position,
+    shirtNumber: shirt,
+    statistics: dirtyStats,
+  } = playerSet;
+  const { secondsPlayed, points, rebounds, assists } = dirtyStats;
+  const minutesPlayed = Math.ceil(secondsPlayed / 60);
   return {
-    ...baseObj,
-    extraTimeIncidents: [
-      extraFirstHalfIncidents,
-      extraSecondHalfIncidents,
-    ].flat(),
-    homeScore,
-    awayScore,
+    player: { id, name },
+    isSub,
+    position,
+    shirt,
+    played: minutesPlayed,
+    points,
+    rebounds,
+    assists,
   };
 };
 module.exports = {
@@ -226,4 +195,5 @@ module.exports = {
   refineLineups,
   refineIncidents,
   handleShootout,
+  refineBasketballLineups,
 };

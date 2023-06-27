@@ -1,4 +1,5 @@
-const { getMatchDate, refineInnings } = require('./transform-data');
+const { getMatchDate } = require('./api-helper');
+const { refineInnings } = require('./transform-data');
 
 const refineEvents = (boilerData, sport, dateState) => {
   const {

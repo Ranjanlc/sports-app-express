@@ -96,12 +96,69 @@ module.exports = `type Team {
     scorer: String
     assister: String
   }
+  type Player{
+    id: ID!
+    name:String!
+  }
+  type CricketScore{
+    inning1Score:Int
+    inning2Score:Int
+    overs:Float
+    wickets:Int
+  }
+  type Bowler{
+     player : Player!
+     over:Float!
+     maiden:Int!
+     run:Int!
+     wicket:Int!
+     economy:Float!
+  }
+  type WicketContainer {
+    type: String
+    catcher:String
+    bowler :String
+  }
+  type Batsman{
+    player: Player!
+    score:Int!
+    balls:Int!
+    fours:Int!
+    sixes:Int!
+    wicket: WicketContainer!
+  }
+  type BasketballScore{
+    current:Int
+    period1:Int
+    period2:Int
+    period3:Int
+    period4:Int
+  }
+  type BasketballStatsStr{
+    stat:String!
+    home:String!
+    away:String!
+  }
+  type PlayerStats{
+    stat:String!
+    points:Int!
+  }
+  type BasketballLineupPlayer{
+    player:Player!
+    shirt:Int!
+    position:String!
+    isSub:Boolean!
+    points:Int!
+    assists:Int!
+    rebounds:Int!
+    played:Int!
+  }
   type MatchContainer {
     matches: [MatchList!]
     featuredMatch: FeaturedMatch
   }
   type FootballDetail {
-    matches: FootballMatches!
+    matches: FootballMatches
     standings: [FootballStanding]
   }
   type CompetitionMatches {
@@ -124,10 +181,10 @@ module.exports = `type Team {
     refCountry: String
     startDate: String!
   }
-  type FootballStats {
-    stat: String!
-    home: Int!
-    away: Int!
+  type Stats {
+    stat: String!,
+    home: Int!,
+    away: Int!,
   }
   type FootballSummary {
     homeHTScore: Int!
@@ -143,36 +200,64 @@ module.exports = `type Team {
     extraTimeIncidents: [Incident]
     penaltyShootout: [Incident]
   }
+  type CricketInfo {
+    venue:String
+    homeScore:CricketScore
+    awayScore:CricketScore
+    startDate:String!
+    toss:String
+    umpires:String
+  }
+  type CricketInnings {
+    extras:String
+    battingTeam:String!
+    bowlingTeam:String!
+    currentBatsmanId:String
+    currentBowlerId:String
+    bowlers:[Bowler!]!
+    batsmen:[Batsman!]!
+    fallOfWickets :[String]
+  }
+  type BasketballInfo{
+    venue:String
+    startDate:String!
+    homeScore:BasketballScore
+    awayScore:BasketballScore
+  }
+  type BasketballStats{
+   otherStats:[Stats!]!,
+   scoringStats:[BasketballStatsStr!]!,
+   leadStats:[BasketballStatsStr!]!,
+  }
+  
+  type BasketballLineups{
+    home:[BasketballLineupPlayer!]!,
+    away:[BasketballLineupPlayer!]!
+  }
 
   type RootMutation {
     addFavourites(date: String): MatchList!
   }
 
   type Query {
-    getMatchesList(
-      date: String!
-      timeZoneDiff: String
-      sportName: String!
-      isLive: Boolean!
-      isCricket: Boolean!
-    ): MatchContainer
+    getMatchesList(date: String!,timeZoneDiff: String, sportName: String!,isLive: Boolean!,isCricket: Boolean!): MatchContainer
+
     getFootballDetails(compId: Int!): FootballDetail!
-    getCompetitionDetails(
-      compId: ID
-      uniqueId: ID!
-      dateState: String!
-      isCricket: Boolean!
-    ): CompetitionDetail!
-    getCompMatches(
-      uniqueId: ID!
-      appSeasonId: ID!
-      dateState: String!
-      page: Int
-      isCricket: Boolean!
-    ): CompetitionMatches!
+    getCompetitionDetails(compId: ID,uniqueId: ID!,dateState: String!,isCricket: Boolean!): CompetitionDetail!
+    getCompMatches(uniqueId: ID!,appSeasonId: ID!,dateState: String!,page: Int,isCricket: Boolean!): CompetitionMatches!
+
     getFootballMatchLineup(matchId: ID!): FootballLineup!
     getFootballMatchInfo(matchId: ID!): FootballInfo!
-    getFootballMatchStats(matchId: ID!): [FootballStats!]!
+    getFootballMatchStats(matchId: ID!): [Stats!]!
     getFootballMatchSummary(matchId: ID!): FootballSummary!
     getFootballMatchTable(compId: ID!): [FootballStanding!]!
+
+    getCricketMatchInfo(matchId: ID!):CricketInfo!
+    getCricketMatchInnings(matchId: ID!):[CricketInnings]!
+    getCricketMatchTable(compId:ID!,uniqueId:ID!):[CompetitionStandingSet]
+
+    getBasketballMatchInfo(matchId: ID!):BasketballInfo!
+    getBasketballMatchStats(matchId: ID!):BasketballStats!
+    getBasketballMatchLineups(matchId:ID!):BasketballLineups
+    getBasketballMatchTable(uniqueId:ID!):[CompetitionStandingSet]
   }`;

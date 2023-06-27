@@ -1,3 +1,5 @@
+// ADDITIONAL-TODO: Add a prediction counter and simulate it using database and based on matchId.
+
 const express = require('express');
 // const { graphqlHTTP } = require('express-graphql');
 const { createYoga, createSchema } = require('graphql-yoga');
@@ -13,6 +15,13 @@ const {
   getFootballMatchStats,
   getFootballMatchSummary,
   getFootballMatchTable,
+  getCricketMatchInfo,
+  getCricketMatchInnings,
+  getCricketMatchTable,
+  getBasketballMatchInfo,
+  getBasketballMatchStats,
+  getBasketballMatchLineups,
+  getBasketballMatchTable,
 } = require('./graphql/resolvers');
 const app = express();
 
@@ -43,6 +52,13 @@ app.use(
           getFootballMatchStats,
           getFootballMatchSummary,
           getFootballMatchTable,
+          getCricketMatchInfo,
+          getCricketMatchInnings,
+          getCricketMatchTable,
+          getBasketballMatchInfo,
+          getBasketballMatchStats,
+          getBasketballMatchLineups,
+          getBasketballMatchTable,
         },
       },
     }),
