@@ -183,7 +183,6 @@ const getSummary = async (matchId) => {
 };
 const getTable = async (compId) => {
   const url = `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=${compId}&locale=EN`;
-  console.log(url);
   const standingData = await fetchData(url, 'standings', 'livescore');
   let standings;
   if (standingData.length === 0) standings = [];

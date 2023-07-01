@@ -8,13 +8,12 @@ exports.getBasketballInfo = async (matchId) => {
     homeTeam: { name: homeTeam },
     awayTeam: { name: awayTeam },
     venue,
-    homeScore: { period1, period2, period3, period4, current },
+    homeScore: { period1, period2, period3, period4 },
     awayScore: {
       period1: awayPeriod1,
       period2: awayPeriod2,
       period3: awayPeriod3,
       period4: awayPeriod4,
-      current: awayCurrent,
     },
     startTimestamp,
   } = data;
@@ -29,13 +28,12 @@ exports.getBasketballInfo = async (matchId) => {
     period2: awayPeriod2,
     period3: awayPeriod3,
     period4: awayPeriod4,
-    current: awayCurrent,
   };
   return {
     homeTeam,
     awayTeam,
-    venue,
-    homeScore: { period1, period2, period3, period4, current },
+    venue: refinedVenue,
+    homeScore: { period1, period2, period3, period4 },
     awayScore,
     startDate,
   };
@@ -64,11 +62,9 @@ exports.getBasketballStats = async (matchId) => {
     refineStats(statsContainer)
   );
   return { scoringStats, otherStats, leadStats };
-  console.log(scoringStats, otherStats);
 };
 exports.getBasketballLineups = async (matchId) => {
-  const url =
-    'https://sofasport.p.rapidapi.com/v1/events/lineups?event_id=10965028';
+  const url = `https://sofasport.p.rapidapi.com/v1/events/lineups?event_id=${matchId}`;
   const {
     home: { players: homePlayers },
     away: { players: awayPlayers },

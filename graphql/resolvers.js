@@ -38,7 +38,7 @@ exports.getMatchesList = async (_, __, { variables }) => {
     if (isLive) {
       return getMatches('_', sportName, true);
     } else {
-      return getMatches(date, sportName);
+      return getMatches(date, sportName, false, timeZoneDiff);
     }
   }
 };

@@ -100,11 +100,15 @@ module.exports = `type Team {
     id: ID!
     name:String!
   }
+  type Wicket{
+    inning1:Int
+    inning2:Int
+  }
   type CricketScore{
     inning1Score:Int
     inning2Score:Int
     overs:Float
-    wickets:Int
+    wickets:Wicket
   }
   type Bowler{
      player : Player!
@@ -128,7 +132,6 @@ module.exports = `type Team {
     wicket: WicketContainer!
   }
   type BasketballScore{
-    current:Int
     period1:Int
     period2:Int
     period3:Int

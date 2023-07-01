@@ -16,6 +16,28 @@ const getMatchDate = (timeStamp) => {
   const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   return formattedTime;
 };
+const checkCurrentDayMatch = (timeStamp, curDate, timeZoneDiff) => {
+  const sign = timeZoneDiff.at(0);
+  const [hours, minutes] = timeZoneDiff.slice(1).split(':');
+
+  const numHours = +hours;
+  const numMinutes = +minutes;
+  const refinedTimeStamp =
+    sign === '+'
+      ? timeStamp + (numHours * 60 * 60 + numMinutes * 60)
+      : timeStamp - (numHours * 60 * 60 + numMinutes * 60);
+  const [refinedMatchDate, _] = getMatchDate(refinedTimeStamp).split(' ');
+  const [month, day, year] = new Date(refinedMatchDate)
+    .toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    .split('/');
+  // Because we have to cnvert 2023-7-1 to 2023-07-01
+  const localeMatchDate = `${year}-${month}-${day}`;
+  return localeMatchDate === curDate;
+};
 const refineFootballDate = (dirtyStartTime, timeZoneDiff) => {
   const sign = timeZoneDiff.at(0);
   // + to change into number
@@ -80,4 +102,5 @@ module.exports = {
   getMatchDate,
   refineFootballDate,
   fetchData,
+  checkCurrentDayMatch,
 };

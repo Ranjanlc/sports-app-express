@@ -8,9 +8,10 @@ const {
   getMatchDate,
   refineFootballDate,
   fetchData,
+  checkCurrentDayMatch,
 } = require('../util/api-helper');
 const { getFeaturedMatches } = require('./getFeaturedMatches');
-const getMatches = async (date, sport, live = false) => {
+const getMatches = async (date, sport, live = false, timeZoneDiff) => {
   // Sport id of basketball is 2 and cricket is 62.
   const url = `https://sofasport.p.rapidapi.com/v1/events/schedule/${
     live ? 'live?' : `date?date=${date}&`
@@ -21,9 +22,12 @@ const getMatches = async (date, sport, live = false) => {
   }
   const filteredData =
     sport === 'basketball'
-      ? data?.filter((comp) => {
-          if (comp.tournament.name !== 'NBA Rising Stars Challenge') {
-            return comp;
+      ? data?.filter((matchData) => {
+          if (
+            matchData.tournament.name !== 'NBA Rising Stars Challenge' &&
+            checkCurrentDayMatch(matchData.startTimestamp, date, timeZoneDiff)
+          ) {
+            return matchData;
           }
         })
       : data;

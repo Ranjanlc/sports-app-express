@@ -33,7 +33,6 @@ exports.getCricketInfo = async (matchId) => {
       .toLowerCase()
       .replace('ing', '')
       .replace('t', '')} first`;
-  console.log(homeScore, awayScore);
   const { home, away } = refineInnings(homeScore, awayScore, false);
   return {
     venue,
@@ -81,7 +80,7 @@ exports.getCricketInnings = async (matchId) => {
         run,
         wicket,
       } = bowlerSet;
-      const economy = (run / over).toFixed(2);
+      const economy = (run / over).toFixed(2) || '-';
       return { player: { id, name }, over, maiden, run, wicket, economy };
     });
     const diryFowArr = [];
@@ -121,16 +120,6 @@ exports.getCricketInnings = async (matchId) => {
         return `${fowScore}/${i + 1} (${playerName}, ${fowOver})`;
       }
     );
-    console.log({
-      extras,
-      battingTeam,
-      bowlingTeam,
-      bowlers,
-      batsmen,
-      fowArr: finalFowArr,
-      currentBatsmanId: currentBatsman?.id,
-      currentBowlerId: currentBowler?.id,
-    });
     return {
       extras,
       battingTeam,

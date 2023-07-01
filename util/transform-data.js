@@ -1,6 +1,6 @@
 const { GraphQLError } = require('graphql');
 
-const API_KEY = '8acd2e89a2mshe39f55bfd24361bp10e3fdjsnf764c88cfede';
+const API_KEY = '135b7947fbmsh12d733431021d4ep17eb00jsn4542b220c4cb';
 const footballApiOptions = {
   headers: {
     'X-RapidAPI-Key': API_KEY,
@@ -61,7 +61,7 @@ const TOP_CLUBS = {
 
 const checkWickets = (wickets, forDisplay = true) => {
   if (!forDisplay) {
-    return wickets === 10 ? 0 : wickets;
+    return wickets === 10 ? null : wickets;
   }
   return `${wickets === 10 || wickets === 0 ? '' : `/${wickets}`}`;
 };
@@ -146,13 +146,21 @@ const refineInnings = (homeScore, awayScore, forDisplay = 'true') => {
     if (homeInning2 || awayInning2) {
       const home = {
         inning1Score: home1stScore,
-        inning2Score: homeInning2.score,
-        overs: home1stOvers + (homeInning2.overs ?? 0),
+        inning2Score: homeInning2?.score,
+        overs: home1stOvers + (homeInning2?.overs ?? 0),
+        wickets: {
+          inning1: checkWickets(home1stWickets, false),
+          inning2: checkWickets(homeInning2?.wickets ?? 0, false),
+        },
       };
       const away = {
         inning1Score: away1stScore,
-        inning2Score: awayInning2.score,
-        overs: away1stOvers + (awayInning2.overs ?? 0),
+        inning2Score: awayInning2?.score,
+        overs: away1stOvers + (awayInning2?.overs ?? 0),
+        wickets: {
+          inning1: checkWickets(away1stWickets, false),
+          inning2: checkWickets(awayInning2?.wickets ?? 0, false),
+        },
       };
       return { home, away };
     }
@@ -161,12 +169,12 @@ const refineInnings = (homeScore, awayScore, forDisplay = 'true') => {
       const home = {
         inning1Score: home1stScore,
         overs: home1stOvers,
-        wickets: checkWickets(home1stWickets, false),
+        wickets: { inning1: checkWickets(home1stWickets, false) },
       };
       const away = {
         inning1Score: away1stScore,
         overs: away1stOvers,
-        wickets: checkWickets(away1stWickets, false),
+        wickets: { inning1: checkWickets(away1stWickets, false) },
       };
       return { home, away };
     }
