@@ -1,3 +1,5 @@
+const { GraphQLError } = require("graphql");
+
 const footballApiOptions = {
   headers: {
     'X-RapidAPI-Key': process.env.API_KEY,
@@ -55,76 +57,33 @@ const TOP_CLUBS = {
     psl: ['Multan Sultans', 'Islamabad United', 'Lahore Qalandars'],
   },
 };
-const getMatchDate = (timeStamp) => {
-  const dateObj = new Date(+timeStamp * 1000);
-  const year = dateObj.getFullYear();
-  const month = dateObj.getUTCMonth() + 1; // add 1 since month is zero-based
-  const day = dateObj.getUTCDate();
-  const hours = dateObj.getUTCHours();
-  const minutes = dateObj.getUTCMinutes();
-  const seconds = dateObj.getUTCSeconds();
-  // Format the date and time as a string
-  const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  return formattedTime;
-};
-const checkWickets = (wickets) => {
-  return `${wickets === 10 ? '' : `/${wickets}`}`;
-};
-const refineFootballDate = (dirtyStartTime, timeZoneDiff) => {
-  const sign = timeZoneDiff.at(0);
-  // + to change into number
-  const laggedMinute = +timeZoneDiff.split(':').at(1);
-  const startTimeMs = new Date(dirtyStartTime).getTime();
-  let newDate;
-  if (laggedMinute > 30) {
-    if (sign === '+') {
-      newDate = new Date(startTimeMs - (60 - laggedMinute) * 60000);
-    }
-    // JUST A ALGORITHMMMM
-    if (sign === '-') {
-      newDate = new Date(startTimeMs + (60 - laggedMinute) * 60000);
-    }
+
+const checkWickets = (wickets, forDisplay = true) => {
+  if (!forDisplay) {
+    return wickets === 10 ? null : wickets;
   }
-  if (laggedMinute < 30) {
-    if (sign === '+') {
-      newDate = new Date(startTimeMs + laggedMinute * 60000);
-    }
-    if (sign === '-') {
-      newDate = new Date(startTimeMs - laggedMinute * 60000);
-    }
-  }
-  const localeDate = newDate.toLocaleString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  });
-  const [date, time] = localeDate.split(',');
-  // Because it is the format of en-Us.
-  const [month, day, year] = date.split('/');
-  // To convert it into same form as APIs'.
-  return `${year}-${month}-${day}${time}`;
+  return `${wickets === 10 || wickets === 0 ? '' : `/${wickets}`}`;
 };
-const refineInnings = (homeScore, awayScore) => {
+
+const refineInnings = (homeScore, awayScore, forDisplay = 'true') => {
   const { display: homeDisplay, innings: homeInnings } = homeScore;
   const { display: awayDisplay, innings: awayInnings } = awayScore;
-  let displayHomeScore, displayAwayScore;
   const homeInningsRefined = homeInnings
     ? homeInnings
     : {
         inning1: {
-          score: 'Yet to bat',
+          score: 0,
           wickets: 0,
-          overs: '-',
+          overs: 0,
         },
       };
   const awayInningsRefined = awayInnings
     ? awayInnings
     : {
         inning1: {
-          score: 'Yet to bat',
+          score: 0,
+          wickets: 0,
+          overs: 0,
         },
       };
   const {
@@ -143,54 +102,93 @@ const refineInnings = (homeScore, awayScore) => {
     },
     inning2: awayInning2,
   } = awayInningsRefined;
-  if (homeInning2 || awayInning2) {
-    const awayTotalScore = awayDisplay;
-    const homeTotalScore = homeDisplay;
-    let dirtyHomeScore;
-    if (homeInning2) {
-      dirtyHomeScore = `${homeInning2.score}${checkWickets(
-        homeInning2.wickets
-      )} (${homeInning2.overs})`;
+
+  // IT will obviously be test match if it reaches here
+  if (forDisplay) {
+    let displayHomeScore, displayAwayScore;
+    if (homeInning2 || awayInning2) {
+      const awayTotalScore = awayDisplay;
+      const homeTotalScore = homeDisplay;
+      let dirtyHomeScore;
+      if (homeInning2) {
+        dirtyHomeScore = `${homeInning2.score}${checkWickets(
+          homeInning2.wickets
+        )} (${homeInning2.overs})`;
+      } else {
+        dirtyHomeScore = `${home1stScore}${checkWickets(
+          home1stWickets
+        )} (${home1stOvers})`;
+      }
+      let dirtyAwayScore;
+      if (awayInning2) {
+        dirtyAwayScore = `${awayInning2.score}${checkWickets(
+          awayInning2.wickets
+        )} (${awayInning2.overs})`;
+      } else {
+        dirtyAwayScore = `${away1stScore}${checkWickets(
+          away1stWickets
+        )} (${away1stOvers})`;
+      }
+      displayHomeScore = `${dirtyHomeScore} ${homeTotalScore}`;
+      displayAwayScore = `${dirtyAwayScore} ${awayTotalScore}`;
     } else {
-      dirtyHomeScore = `${home1stScore}${checkWickets(
-        home1stWickets
-      )} (${home1stOvers})`;
+      displayHomeScore = homeScore.innings
+        ? `${home1stScore}${checkWickets(home1stWickets)} (${home1stOvers})`
+        : 'Yet to bat';
+      displayAwayScore = awayScore.innings
+        ? `${away1stScore}${checkWickets(away1stWickets)} (${away1stOvers})`
+        : 'Yet to bat';
     }
-    let dirtyAwayScore;
-    if (awayInning2) {
-      dirtyAwayScore = `${awayInning2.score}${checkWickets(
-        awayInning2.wickets
-      )} (${awayInning2.overs})`;
-    } else {
-      dirtyAwayScore = `${away1stScore}${checkWickets(
-        away1stWickets
-      )} (${away1stOvers})`;
-    }
-    displayHomeScore = `${dirtyHomeScore} ${homeTotalScore}`;
-    displayAwayScore = `${dirtyAwayScore} ${awayTotalScore}`;
-  } else {
-    //To check if there is innings object in homeScore,where the match might be played and it's innings may not come;
-    displayHomeScore = homeScore.innings
-      ? `${home1stScore}${checkWickets(home1stWickets)} (${home1stOvers})`
-      : 'Yet to bat';
-    displayAwayScore = awayScore.innings
-      ? `${away1stScore}${checkWickets(away1stWickets)} (${away1stOvers})`
-      : 'Yet to bat';
+    return { displayHomeScore, displayAwayScore };
   }
-  return { displayHomeScore, displayAwayScore };
+  if (!forDisplay) {
+    if (homeInning2 || awayInning2) {
+      const home = {
+        inning1Score: home1stScore,
+        inning2Score: homeInning2?.score,
+        overs: home1stOvers + (homeInning2?.overs ?? 0),
+        wickets: {
+          inning1: checkWickets(home1stWickets, false),
+          inning2: checkWickets(homeInning2?.wickets ?? 0, false),
+        },
+      };
+      const away = {
+        inning1Score: away1stScore,
+        inning2Score: awayInning2?.score,
+        overs: away1stOvers + (awayInning2?.overs ?? 0),
+        wickets: {
+          inning1: checkWickets(away1stWickets, false),
+          inning2: checkWickets(awayInning2?.wickets ?? 0, false),
+        },
+      };
+      return { home, away };
+    }
+
+    if (!(homeInning2 || awayInning2)) {
+      const home = {
+        inning1Score: home1stScore,
+        overs: home1stOvers,
+        wickets: { inning1: checkWickets(home1stWickets, false) },
+      };
+      const away = {
+        inning1Score: away1stScore,
+        overs: away1stOvers,
+        wickets: { inning1: checkWickets(away1stWickets, false) },
+      };
+      return { home, away };
+    }
+  }
 };
-const handleError = (name, code) => {
-  const error = new Error(`Can't fetch ${name}`);
-  error.code = code || 404;
+const handleError = (name) => {
+  const error = new GraphQLError(`Can't fetch ${name}`);
+  error.code = 404;
   throw error;
 };
 module.exports = {
-  getMatchDate,
   checkWickets,
   refineInnings,
   footballApiOptions,
   sportApiOptions,
-  refineFootballDate,
   TOP_CLUBS,
   handleError,
 };

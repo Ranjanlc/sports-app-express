@@ -4,22 +4,18 @@ const {
   refineStats,
   refineLineups,
   refineIncidents,
+  handleShootout,
 } = require('../util/match-detail-helper');
+const { fetchData } = require('../util/api-helper');
 const BASE_URL = 'https://livescore-sports.p.rapidapi.com/v1/events';
 const getInfo = async (matchId) => {
   const url = `${BASE_URL}/info?sport=soccer&event_id=${matchId}&locale=EN`;
-  const res = await fetch(url, footballApiOptions);
-  if (res.status === 404 || res.status === 429) {
-    handleError('info');
-  }
   const {
-    DATA: {
-      VENUE_NAME: venue,
-      SPECTATORS_NUMBER: spectators,
-      REFS,
-      MATCH_START_DATE: matchStartDate,
-    },
-  } = await res.json();
+    VENUE_NAME: venue,
+    SPECTATORS_NUMBER: spectators,
+    REFS,
+    MATCH_START_DATE: matchStartDate,
+  } = await fetchData(url, 'info', 'livescore');
   // The slicing coz we get date in a weird format.
   const dirtyStartDate = String(matchStartDate).slice(0, 8);
   const slicedDate = `${dirtyStartDate.slice(0, 4)}-${dirtyStartDate.slice(
@@ -40,13 +36,11 @@ const getInfo = async (matchId) => {
 };
 const getLineups = async (matchId) => {
   const url = `${BASE_URL}/lineups?sport=soccer&event_id=${matchId}&locale=EN`;
-  const res = await fetch(url, footballApiOptions);
-  if (res.status === 404 || res.status === 429) {
-    handleError('lineups');
-  }
-  const {
-    DATA: { LINEUPS: lineups, SUBSTITUTIONS: subs },
-  } = await res.json();
+  const { LINEUPS: lineups, SUBSTITUTIONS: subs } = await fetchData(
+    url,
+    'lineups',
+    'livescore'
+  );
   const refinedLineups = refineLineups(lineups);
   if (!subs) {
     return { lineups: refinedLineups };
@@ -64,7 +58,7 @@ const getLineups = async (matchId) => {
           OTHER_PLAYER_ID: subInPlayerId,
           MINUTE_EXTENDED: minuteExtended,
         } = flatSubs[i];
-        console.log(flatSubs[i]);
+
         subsContainer.push({
           minute,
           team,
@@ -81,13 +75,7 @@ const getLineups = async (matchId) => {
 };
 const getStats = async (matchId) => {
   const url = `${BASE_URL}/statistics?sport=soccer&event_id=${matchId}&locale=EN`;
-  const res = await fetch(url, footballApiOptions);
-  if (res.status === 404 || res.status === 429) {
-    handleError('stats');
-  }
-  const {
-    DATA: { STATISTICS: statistics },
-  } = await res.json();
+  const { STATISTICS: statistics } = await fetchData(url, 'stats', 'livescore');
   const refinedStatistics = statistics.map((el) => {
     const {
       TEAM_NUMBER: team,
@@ -142,26 +130,22 @@ const getStats = async (matchId) => {
 };
 const getSummary = async (matchId) => {
   const url = `${BASE_URL}/incidents?sport=soccer&event_id=${matchId}&locale=EN`;
-  const res = await fetch(url, footballApiOptions);
-  if (res.status === 404 || res.status === 429) {
-    handleError(summary);
-  }
   const {
-    DATA: {
-      HOME_SCORE: homeScore,
-      AWAY_SCORE: awayScore,
-      HOME_FULL_TIME_SCORE: homeFTScore,
-      AWAY_FULL_TIME_SCORE: awayFTScore,
-      HOME_HALF_TIME_SCORE: homeHTScore,
-      AWAY_HALF_TIME_SCORE: awayHTScore,
-      HOME_PENALTY_SHOOT_OUT_PERIOD_SCORE: homeShootoutScore,
-      AWAY_PENALTY_SHOOT_OUT_PERIOD_SCORE: awayShootoutScore,
-      INCIDENTS: dirtyIncidents,
-    },
-  } = await res.json();
-  const incidents = refineIncidents(dirtyIncidents);
-  console.log(incidents);
-  const [firstHalfIncidents, secondHalfIncidents] = incidents;
+    HOME_SCORE: homeScore,
+    AWAY_SCORE: awayScore,
+    HOME_FULL_TIME_SCORE: homeFTScore,
+    AWAY_FULL_TIME_SCORE: awayFTScore,
+    HOME_HALF_TIME_SCORE: homeHTScore,
+    AWAY_HALF_TIME_SCORE: awayHTScore,
+    HOME_PENALTY_SHOOT_OUT_PERIOD_SCORE: homeShootoutScore,
+    AWAY_PENALTY_SHOOT_OUT_PERIOD_SCORE: awayShootoutScore,
+    INCIDENTS: dirtyIncidents,
+  } = await fetchData(url, 'summary', 'livescore');
+  const firstHalfIncidents = refineIncidents(dirtyIncidents[1]);
+  const secondHalfIncidents = refineIncidents(dirtyIncidents[2]);
+  const extraFirstHalfIncidents = refineIncidents(dirtyIncidents[3]);
+  const extraSecondHalfIncidents = refineIncidents(dirtyIncidents[4]);
+  const shootoutHappened = homeShootoutScore ?? awayShootoutScore;
   const baseObj = {
     homeFTScore,
     awayFTScore,
@@ -170,59 +154,36 @@ const getSummary = async (matchId) => {
     firstHalfIncidents,
     secondHalfIncidents,
   };
-  if (incidents.length <= 2) {
-    return baseObj;
+  if (!shootoutHappened) {
+    const extraTimeIncidents = [
+      extraFirstHalfIncidents,
+      extraSecondHalfIncidents,
+    ]
+      .flat()
+      .filter(Boolean); //Boolean to filter undefined if any of the extraTimeIncidents would go missing.
+    return { ...baseObj, extraTimeIncidents };
   }
-  // There is extra time and possibly penalty
-  if (incidents.length === 4) {
-    const [__, _, extraFirstHalfIncidents, extraSecondHalfIncidents] =
-      incidents;
-    const penaltyShootout = [];
-    extraSecondHalfIncidents.forEach((incidentSet) => {
-      const { incident, playerName, score, team } = incidentSet;
-      // Checking if pen shootout happened
-      if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
-        penaltyShootout.push({ incident, playerName, score, team });
-      }
-    });
-    if (penaltyShootout.length !== 0) {
-      return {
-        ...baseObj,
-        extraTimeIncidents: [
-          extraFirstHalfIncidents,
-          extraSecondHalfIncidents.filter(
-            (incidentSet) =>
-              !(incidentSet.incident === 'shootOutPen') &&
-              !(incidentSet.incident === 'shootOutMiss')
-          ),
-        ].flat(),
-        penaltyShootout,
-        homeScore,
-        awayScore,
-        homeShootoutScore,
-        awayShootoutScore,
-      };
-    }
+  if (shootoutHappened) {
+    const { refinedExtraIncidents, penaltyShootout } = handleShootout(
+      extraSecondHalfIncidents
+    );
+    const extraTimeIncidents = [extraFirstHalfIncidents, refinedExtraIncidents]
+      .flat()
+      .filter(Boolean);
     return {
       ...baseObj,
-      extraTimeIncidents: [
-        extraFirstHalfIncidents,
-        extraSecondHalfIncidents,
-      ].flat(),
+      extraTimeIncidents,
+      penaltyShootout,
+      homeShootoutScore,
+      awayShootoutScore,
       homeScore,
       awayScore,
     };
   }
 };
 const getTable = async (compId) => {
-  const res = await fetch(
-    `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=${compId}&locale=EN`,
-    footballApiOptions
-  );
-  if (res.status === 404 || res.status === 429) {
-    handleError('standings');
-  }
-  const { DATA: standingData } = await res.json();
+  const url = `https://livescore-sports.p.rapidapi.com/v1/competitions/standings?timezone=0&competition_id=${compId}&locale=EN`;
+  const standingData = await fetchData(url, 'standings', 'livescore');
   let standings;
   if (standingData.length === 0) standings = [];
   if (standingData.length > 1) {

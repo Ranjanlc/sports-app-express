@@ -67,48 +67,43 @@ const refineStats = (slug) => {
   return { camelCaseStat, displayStat };
 };
 const refineIncidents = (dirtyIncidents) => {
-  const refinedIncident = Object.values(dirtyIncidents).map((incidentSet) => {
-    const incident = incidentSet.map((el) => {
-      const {
-        MINUTE: minute,
-        NAME: team,
-        MINUTE_EXTENDED: minuteExtended,
-        PLAYER_NAME: playerName,
-        INCIDENT_TYPE: incidentType,
-        SCORE: score,
-        INCIDENTS: innerIncidents,
-      } = el;
-      const baseObj = { minute, team, minuteExtended };
-      if (!score) {
-        baseObj.playerName = refinePlayerNameStats(playerName);
-        baseObj.incident = getIncident(incidentType);
+  if (!dirtyIncidents) return null;
+  const incident = dirtyIncidents.map((el) => {
+    const {
+      MINUTE: minute,
+      NAME: team,
+      MINUTE_EXTENDED: minuteExtended,
+      PLAYER_NAME: playerName,
+      INCIDENT_TYPE: incidentType,
+      SCORE: score,
+      INCIDENTS: innerIncidents,
+    } = el;
+    const baseObj = { minute, team, minuteExtended };
+    if (!score) {
+      baseObj.playerName = refinePlayerNameStats(playerName);
+      baseObj.incident = getIncident(incidentType);
+    }
+    if (score && incidentType) {
+      baseObj.playerName = refinePlayerNameStats(playerName);
+      baseObj.incident = getIncident(incidentType);
+      baseObj.hasAssisted = false;
+      baseObj.score = score;
+    }
+    if (score && innerIncidents) {
+      const [{ PLAYER_NAME: scorer, INCIDENT_TYPE: incidentType }] =
+        innerIncidents;
+      if (innerIncidents.length === 2) {
+        const assister = innerIncidents[1].PLAYER_NAME;
+        baseObj.hasAssisted = true;
+        baseObj.assister = refinePlayerNameStats(assister);
       }
-      if (score && incidentType) {
-        baseObj.playerName = refinePlayerNameStats(playerName);
-        baseObj.incident = getIncident(incidentType);
-        baseObj.hasAssisted = false;
-        baseObj.score = score;
-      }
-      if (score && innerIncidents) {
-        const [{ PLAYER_NAME: scorer, INCIDENT_TYPE: incidentType }] =
-          innerIncidents;
-        if (innerIncidents.length === 2) {
-          const assister = innerIncidents[1].PLAYER_NAME;
-          baseObj.hasAssisted = true;
-          baseObj.assister = refinePlayerNameStats(assister);
-        }
-        baseObj.scorer = refinePlayerNameStats(scorer);
-        baseObj.incident = getIncident(incidentType);
-        baseObj.score = score;
-      }
-      // console.log(baseObj);
-      return baseObj;
-    });
-    // console.log(incident);
-    return incident;
+      baseObj.scorer = refinePlayerNameStats(scorer);
+      baseObj.incident = getIncident(incidentType);
+      baseObj.score = score;
+    }
+    return baseObj;
   });
-  // console.log(refinedIncident);
-  return refinedIncident;
+  return incident;
 };
 const refineLineups = (lineups) => {
   const refinedLineup = lineups.map((el) => {
@@ -119,7 +114,6 @@ const refineLineups = (lineups) => {
     } = el;
     const playerSet = dirtyPlayerSet.reduce(
       (acc, playerSet) => {
-        console.log(playerSet);
         const {
           PLAYER_ID: playerId,
           EXTERNAL_ID: externalId,
@@ -157,8 +151,49 @@ const refineLineups = (lineups) => {
   });
   return refinedLineup;
 };
+const handleShootout = (incidents) => {
+  const penaltyShootout = [];
+  incidents.forEach((incidentSet) => {
+    const { incident, playerName, score, team } = incidentSet;
+    // Checking if pen shootout happened
+    if (incident === 'shootOutPen' || incident === 'shootOutMiss') {
+      penaltyShootout.push({ incident, playerName, score, team });
+    }
+  });
+  return {
+    refinedExtraIncidents: incidents.filter(
+      (incidentSet) =>
+        !(incidentSet.incident === 'shootOutPen') &&
+        !(incidentSet.incident === 'shootOutMiss')
+    ),
+    penaltyShootout,
+  };
+};
+const refineBasketballLineups = (playerSet) => {
+  const {
+    player: { id, name },
+    substitute: isSub,
+    position,
+    shirtNumber: shirt,
+    statistics: dirtyStats,
+  } = playerSet;
+  const { secondsPlayed, points, rebounds, assists } = dirtyStats;
+  const minutesPlayed = Math.ceil(secondsPlayed / 60);
+  return {
+    player: { id, name },
+    isSub,
+    position,
+    shirt,
+    played: minutesPlayed,
+    points,
+    rebounds,
+    assists,
+  };
+};
 module.exports = {
   refineStats,
   refineLineups,
   refineIncidents,
+  handleShootout,
+  refineBasketballLineups,
 };

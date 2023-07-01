@@ -1,33 +1,33 @@
 const {
-  getMatchDate,
   refineInnings,
   footballApiOptions,
   sportApiOptions,
-  refineFootballDate,
   handleError,
 } = require('../util/transform-data');
+const {
+  getMatchDate,
+  refineFootballDate,
+  fetchData,
+  checkCurrentDayMatch,
+} = require('../util/api-helper');
 const { getFeaturedMatches } = require('./getFeaturedMatches');
-const getMatches = async (date, sport, live = false) => {
+const getMatches = async (date, sport, live = false, timeZoneDiff) => {
   // Sport id of basketball is 2 and cricket is 62.
-
-  const res = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/events/schedule/${
-      live ? 'live?' : `date?date=${date}&`
-    }sport_id=${sport === 'basketball' ? '2' : '62'}`,
-    sportApiOptions
-  );
-  if (res.status === 404 || res.status === 429) {
-    handleError(`${sport} matches`);
-  }
-  const { data } = await res.json();
+  const url = `https://sofasport.p.rapidapi.com/v1/events/schedule/${
+    live ? 'live?' : `date?date=${date}&`
+  }sport_id=${sport === 'basketball' ? '2' : '62'}`;
+  const data = await fetchData(url, `${sport} matches`);
   if (data?.length === 0) {
     return [];
   }
   const filteredData =
     sport === 'basketball'
-      ? data?.filter((comp) => {
-          if (comp.tournament.name !== 'NBA Rising Stars Challenge') {
-            return comp;
+      ? data?.filter((matchData) => {
+          if (
+            matchData.tournament.name !== 'NBA Rising Stars Challenge' &&
+            checkCurrentDayMatch(matchData.startTimestamp, date, timeZoneDiff)
+          ) {
+            return matchData;
           }
         })
       : data;
@@ -157,15 +157,10 @@ const getFootballMatches = async (date, timeZoneDiff, live = false) => {
     !live && +timeZoneMinute > 30
       ? Number(dirtyTimeZoneHour) + 1
       : dirtyTimeZoneHour;
-  const URL = `https://livescore-sports.p.rapidapi.com/v1/events/${
+  const url = `https://livescore-sports.p.rapidapi.com/v1/events/${
     live ? 'live?' : `list?date=${date}&`
   }locale=EN&${live ? 'timezone=0' : `timezone=${timeZoneHour}`}&sport=soccer`;
-  const res = await fetch(URL, footballApiOptions);
-  console.log(res);
-  if (res.status === 404 || res.status === 429) {
-    handleError('football matches');
-  }
-  const { DATA: data } = await res.json();
+  const data = await await fetchData(url, 'football matches', 'livescore');
   let minimizedSet;
   if (data?.length === 0) {
     return [];

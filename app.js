@@ -1,9 +1,31 @@
+// ADDITIONAL-TODO: Add a prediction counter and simulate it using database and based on matchId.
+
 const express = require('express');
-const { graphqlHTTP } = require('express-graphql');
+// const { graphqlHTTP } = require('express-graphql');
+const { createYoga, createSchema } = require('graphql-yoga');
+const { clearHandler } = require('graphql-http');
 const graphqlSchema = require('./graphql/schema');
-const graphqlResolver = require('./graphql/resolvers');
+const {
+  getFootballDetails,
+  getCompetitionDetails,
+  getMatchesList,
+  getCompMatches,
+  getFootballMatchInfo,
+  getFootballMatchLineup,
+  getFootballMatchStats,
+  getFootballMatchSummary,
+  getFootballMatchTable,
+  getCricketMatchInfo,
+  getCricketMatchInnings,
+  getCricketMatchTable,
+  getBasketballMatchInfo,
+  getBasketballMatchStats,
+  getBasketballMatchLineups,
+  getBasketballMatchTable,
+} = require('./graphql/resolvers');
 const app = express();
 
+app.use(express.json());
 app.use((req, res, next) => {
   const allowedOrigin = 'https://ballscore.vercel.app';
   // Check if the request origin matches the allowed origin
@@ -28,25 +50,41 @@ app.use((req, res, next) => {
 
 app.use(
   '/graphql',
-  graphqlHTTP({
-    schema: graphqlSchema,
-    rootValue: graphqlResolver,
-    graphiql: true,
-    customFormatErrorFn: (err) => {
-      if (!err.originalError) {
-        return err;
-      }
-      const data = err.originalError.data;
-      const message = err.message || ' An Error occured';
-      const code = err.originalError.code || 500;
-      // WE can name these field in the way we want
-      console.log({ message, code, data });
-      return { message, status: code, data };
+  createYoga({
+    schema: createSchema({
+      typeDefs: graphqlSchema,
+      resolvers: {
+        Query: {
+          getFootballDetails,
+          getCompMatches,
+          getCompetitionDetails,
+          getMatchesList,
+          getFootballMatchInfo,
+          getFootballMatchLineup,
+          getFootballMatchStats,
+          getFootballMatchSummary,
+          getFootballMatchTable,
+          getCricketMatchInfo,
+          getCricketMatchInnings,
+          getCricketMatchTable,
+          getBasketballMatchInfo,
+          getBasketballMatchStats,
+          getBasketballMatchLineups,
+          getBasketballMatchTable,
+        },
+      },
+    }),
+    context: (req) => {
+      return {
+        variables: req.req.body.variables || {},
+      };
     },
+    maskedErrors: true, //only for dev
+    // Erorrs if thrown with GraphQL Error constructor, it would automatically detect it.
+    logging: true,
   })
 );
 app.use((error, req, res, next) => {
-  console.log(error, 'yo ho ra?');
   const status = error.statusCode || 500;
   const message = error.message;
   const data = error.data;

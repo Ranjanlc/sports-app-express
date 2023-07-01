@@ -8,10 +8,12 @@ const {
   refineStandings,
   getFootballStandings,
 } = require('../util/competition-helper');
+const { fetchData } = require('../util/api-helper');
 const getFootballURL = (compId, mode) => {
   return `https://livescore-sports.p.rapidapi.com/v1/competitions/${mode}?timezone=0&competition_id=${compId}&locale=EN`;
 };
 const getFootballCompDetails = async (compId) => {
+  const errors = [];
   const res = await fetch(
     getFootballURL(compId, 'details'),
     footballApiOptions
@@ -20,18 +22,21 @@ const getFootballCompDetails = async (compId) => {
     getFootballURL(compId, 'standings'),
     footballApiOptions
   );
-  if (res.status === 404 || res.status === 429) {
-    handleError('competition details');
+  if (res.status === 404 || res.status === 429 || res.status === 403) {
+    errors.push('matches');
   }
   if (res1.status === 404) {
-    handleError('standings');
+    errors.push('standings');
+  }
+  if (errors.length > 1) {
+    handleError(errors.join('and'));
   }
   const {
     DATA: { STAGES },
   } = await res.json();
   const { DATA: standingData } = await res1.json();
   let standings;
-  if (standingData.length === 0) standings = [];
+  if (standingData.length === 0 || !standingData) standings = [];
   if (standingData.length > 1) {
     // flatMap coz there would be two arrays,one from the map itself and from destructureStandings and as it doesnt fit schema,we flatMap.
     standings = standingData.flatMap((item) => {
@@ -43,6 +48,7 @@ const getFootballCompDetails = async (compId) => {
   }
 
   const { EVENTS: events } = STAGES.at(0);
+  if (!events) return { standings };
   const matches = { fixtures: [], results: [] };
   events.forEach((unfilteredEvent) => {
     const {
@@ -101,13 +107,12 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
     }=${sport === 'cricket' ? id : uniqueId}`,
     sportApiOptions
   );
-  if (res.status === 404 || res.status === 429) {
+  if (res.status === 404 || res.status === 429 || res.status === 403) {
     handleError('Sorry,internal server error', 500);
   }
   const { data } = await res.json();
   const seasons = sport === 'basketball' ? data : data.seasons;
   const seasonId = seasons.at(0).id;
-  // console.log(seasonId);
   const standingRes = await fetch(
     `https://sofasport.p.rapidapi.com/v1/seasons/standings?standing_type=total&seasons_id=${seasonId}&unique_tournament_id=${uniqueId}`,
     sportApiOptions
@@ -124,7 +129,7 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
   }
   if (errors.length > 1) {
     // If both  failed to fetch
-    handleError('competition details');
+    handleError(errors.join('and'));
   }
   const { data: standingData } = await standingRes.json();
   const { data: matchData } = await matchRes.json();
@@ -141,8 +146,8 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
       });
     }
   }
+  if (!matchData) return { seasonId, standingSet };
   if (matchData) {
-    // console.log(matchData);
     const { events, hasNextPage: matchHasNextPage } = matchData;
     // Setting the variables value;
     hasNextPage = matchHasNextPage;
@@ -157,15 +162,7 @@ const getCompetitionDetailHandler = async (sport, id, dateState, uniqueId) => {
       }
     });
   }
-  if (standingData && matchData) {
-    return { matchSet: { matches, hasNextPage }, seasonId, standingSet };
-  }
-  if (standingData && !matchData) {
-    return { seasonId, standingSet };
-  }
-  if (matchData && !standingData) {
-    return { matchSet: { matches, hasNextPage }, seasonId };
-  }
+  return { matchSet: { matches, hasNextPage }, seasonId, standingSet };
 };
 const getCompetitionMatches = async (
   sport,
@@ -174,16 +171,9 @@ const getCompetitionMatches = async (
   dateState,
   page
 ) => {
-  const matchRes = await fetch(
-    `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${uniqueId}`,
-    sportApiOptions
-  );
-  if (matchRes.status === 404 || matchRes.status === 429) {
-    handleError('competition matches');
-  }
-  const {
-    data: { events, hasNextPage },
-  } = await matchRes.json();
+  const url = `https://sofasport.p.rapidapi.com/v1/seasons/events?course_events=${dateState}&page=${page}&seasons_id=${appSeasonId}&unique_tournament_id=${uniqueId}`;
+  const data = await fetchData(url, 'competition matches');
+  const { events, hasNextPage } = data;
   const matches = [];
   events.forEach((boilerData) => {
     const event = refineEvents(boilerData, sport, dateState);
