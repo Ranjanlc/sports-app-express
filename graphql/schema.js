@@ -238,10 +238,6 @@ module.exports = `type Team {
     away:[BasketballLineupPlayer!]!
   }
 
-  type RootMutation {
-    addFavourites(date: String): MatchList!
-  }
-
   type Query {
     getMatchesList(date: String!,timeZoneDiff: String, sportName: String!,isLive: Boolean!,isCricket: Boolean!): MatchContainer
 
