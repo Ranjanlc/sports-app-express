@@ -23,6 +23,7 @@ const getMatches = async (date, sport, live = false, timeZoneDiff) => {
   const filteredData =
     sport === 'basketball'
       ? data?.filter((matchData) => {
+          if (live) return matchData;
           if (
             matchData.tournament.name !== 'NBA Rising Stars Challenge' &&
             checkCurrentDayMatch(matchData.startTimestamp, date, timeZoneDiff)
