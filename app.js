@@ -32,6 +32,7 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
+  console.log(req.headers.origin);
   // Check if the request origin matches the allowed origin
   if (req.headers.origin === allowedOrigin) {
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
