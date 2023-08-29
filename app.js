@@ -29,7 +29,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   const allowedOrigin = "https://ballscore.vercel.app";
   const allowedOrigin2 = "https://deployment.d1qzxwzcfybbvy.amplifyapp.com";
-  console.log(req.headers.origin);
+
   // Check if the request origin matches the allowed origin
   if (req.headers.origin === allowedOrigin) {
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
@@ -41,7 +41,20 @@ app.use((req, res, next) => {
       "Access-Control-Allow-Headers",
       "Content-Type, Authorization"
     );
-
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  } else if (req.headers.origin === allowedOrigin2) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin2);
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }
