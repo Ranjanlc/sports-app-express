@@ -107,4 +107,4 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message, data });
 });
 
-app.listen(8080);
+app.listen(process.env.PORT || 8080);
