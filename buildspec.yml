@@ -6,15 +6,10 @@ phases:
       nodejs: 20
     commands:
       - npm install
-  build:
-    commands:
-      - echo Build started on `date`
-      - npm run build
   post_build:
     commands:
       - echo Build completed on `date`
 artifacts:
   files:
-    - build/**/*
-    - package.json
-    - node_modules/**/*
+    - "**/*"
+    - "!node_modules/**"
