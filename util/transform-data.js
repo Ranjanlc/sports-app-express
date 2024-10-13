@@ -1,15 +1,14 @@
-const { GraphQLError } = require('graphql');
+const { GraphQLError } = require("graphql");
 
-const API_KEY = '135b7947fbmsh12d733431021d4ep17eb00jsn4542b220c4cb';
 const footballApiOptions = {
   headers: {
-    'X-RapidAPI-Key': API_KEY,
+    'X-RapidAPI-Key': process.env.API_KEY,
     'X-RapidAPI-Host': 'livescore-sports.p.rapidapi.com',
   },
 };
 const sportApiOptions = {
   headers: {
-    'X-RapidAPI-Key': API_KEY,
+    'X-RapidAPI-Key': process.env.API_KEY,
     'X-RapidAPI-Host': 'sofasport.p.rapidapi.com',
   },
 };
@@ -188,7 +187,6 @@ const handleError = (name) => {
 module.exports = {
   checkWickets,
   refineInnings,
-  API_KEY,
   footballApiOptions,
   sportApiOptions,
   TOP_CLUBS,

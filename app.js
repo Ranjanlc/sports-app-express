@@ -1,10 +1,10 @@
 // ADDITIONAL-TODO: Add a prediction counter and simulate it using database and based on matchId.
 
-const express = require('express');
+const express = require("express");
 // const { graphqlHTTP } = require('express-graphql');
-const { createYoga, createSchema } = require('graphql-yoga');
-const { clearHandler } = require('graphql-http');
-const graphqlSchema = require('./graphql/schema');
+const { createYoga, createSchema } = require("graphql-yoga");
+const { clearHandler } = require("graphql-http");
+const graphqlSchema = require("./graphql/schema");
 const {
   getFootballDetails,
   getCompetitionDetails,
@@ -22,22 +22,50 @@ const {
   getBasketballMatchStats,
   getBasketballMatchLineups,
   getBasketballMatchTable,
-} = require('./graphql/resolvers');
+} = require("./graphql/resolvers");
 const app = express();
 
 app.use(express.json());
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+  const allowedOrigin = "https://ballscore.vercel.app";
+  const allowedOrigin2 = "https://deployment.d1qzxwzcfybbvy.amplifyapp.com";
+
+  // Check if the request origin matches the allowed origin
+  if (req.headers.origin === allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  } else if (req.headers.origin === allowedOrigin2) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin2);
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  } else {
+    return res.status(403).send("FORBIDDEN REQUEST BRO");
   }
-  next();
 });
 
 app.use(
-  '/graphql',
+  "/graphql",
   createYoga({
     schema: createSchema({
       typeDefs: graphqlSchema,
@@ -79,4 +107,4 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message, data });
 });
 
-app.listen(8080);
+app.listen(process.env.PORT || 8080);
