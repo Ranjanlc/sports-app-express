@@ -1,5 +1,3 @@
-Here is a `README.md` file for your project:
-
 # Sports Match Details API
 
 This project provides an API to fetch details about various sports matches, including football, cricket, and basketball. The API is built using Node.js, Express, and GraphQL.
